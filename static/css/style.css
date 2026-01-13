@@ -1,0 +1,202 @@
+:root {
+    --bg-color: #1a1a1a;
+    --panel-bg: #2b2b2b;
+    --accent-color: #00bcd4; /* 青色，类似截图中的高亮 */
+    --text-color: #e0e0e0;
+    --secondary-text: #a0a0a0;
+}
+
+body {
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+/* 左侧：输入控制区 */
+.control-panel {
+    flex: 1;
+    min-width: 300px;
+    background: var(--panel-bg);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+    border: 1px solid #3d3d3d;
+}
+
+/* 右侧：结果展示区 */
+.result-panel {
+    flex: 2;
+    min-width: 400px;
+    background: var(--panel-bg);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #3d3d3d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 500px;
+}
+
+h2 {
+    color: var(--accent-color);
+    border-bottom: 1px solid #444;
+    padding-bottom: 10px;
+    margin-top: 0;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--secondary-text);
+    font-size: 0.9rem;
+}
+
+input[type="text"], select, input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    background: #1e1e1e;
+    border: 1px solid #444;
+    color: white;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+/* 摇杆交互区域核心样式 */
+.joystick-container {
+    background: #141414;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    border: 1px solid #333;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 模拟截图中的网格背景 */
+.joystick-pad {
+    width: 200px;
+    height: 200px;
+    background: 
+        linear-gradient(rgba(0, 188, 212, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 188, 212, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-color: #000;
+    border-radius: 50%;
+    margin: 0 auto;
+    position: relative;
+    border: 2px solid var(--accent-color);
+    cursor: crosshair;
+    box-shadow: 0 0 15px rgba(0, 188, 212, 0.2);
+}
+
+/* 中心的黄点/手柄 */
+.joystick-handle {
+    width: 20px;
+    height: 20px;
+    background-color: #ff9800; /* 橙黄色 */
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none; /* 让鼠标事件穿透到父元素 */
+    box-shadow: 0 0 10px #ff9800;
+    transition: transform 0.05s ease-out; /* 平滑一点 */
+}
+
+/* 十字线 */
+.crosshair-h, .crosshair-v {
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.2);
+    pointer-events: none;
+}
+.crosshair-h { top: 50%; left: 0; width: 100%; height: 1px; }
+.crosshair-v { left: 50%; top: 0; height: 100%; width: 1px; }
+
+/* 坐标数值显示 */
+.coords-display {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+    font-family: monospace;
+    font-size: 0.8rem;
+}
+
+.coord-box {
+    background: #000;
+    padding: 5px 10px;
+    border-radius: 4px;
+    color: var(--accent-color);
+    border: 1px solid #333;
+}
+
+/* 缩放滑块 */
+.zoom-control {
+    margin-top: 15px;
+}
+input[type=range] {
+    width: 100%;
+    accent-color: var(--accent-color);
+}
+
+button.submit-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(45deg, #00bcd4, #008ba3);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+button.submit-btn:hover {
+    filter: brightness(1.1);
+}
+button.submit-btn:disabled {
+    background: #555;
+    cursor: not-allowed;
+}
+
+.preview-img, .result-img {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.loading-spinner {
+    border: 4px solid #333;
+    border-top: 4px solid var(--accent-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    display: none;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
