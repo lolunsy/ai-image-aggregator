@@ -1,257 +1,349 @@
 :root {
-    --bg-color: #0f172a; /* 更深邃的蓝黑色 */
-    --panel-bg: #1e293b;
-    --accent-color: #8b5cf6; /* 紫色系 */
-    --accent-hover: #7c3aed;
-    --text-color: #e2e8f0;
-    --secondary-text: #94a3b8;
+    --bg-dark: #09090b;
+    --panel-bg: rgba(24, 24, 27, 0.6);
+    --border-color: #27272a;
+    --accent: #6366f1; /* Indigo */
+    --accent-hover: #4f46e5;
+    --text-main: #f4f4f5;
+    --text-dim: #a1a1aa;
+    --success: #10b981;
 }
+
+* { box-sizing: border-box; }
 
 body {
-    font-family: 'Segoe UI', Roboto, sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
     margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    height: 100vh;
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    overflow: hidden;
 }
 
-/* 顶部导航栏 */
-.navbar {
-    height: 60px;
-    background: rgba(30, 41, 59, 0.8);
-    border-bottom: 1px solid #334155;
+/* 背景光效 */
+.ambient-glow {
+    position: fixed;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at center, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* 顶部栏 */
+.studio-header {
+    height: 56px;
+    border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 20px;
-    backdrop-filter: blur(10px);
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    padding: 0 24px;
+    background: rgba(9, 9, 11, 0.8);
+    backdrop-filter: blur(8px);
 }
 
 .brand {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-weight: bold;
-    font-size: 1.2rem;
-    color: white;
+    gap: 12px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
 }
+.brand i { color: var(--accent); }
+.version { font-size: 10px; background: #27272a; padding: 2px 6px; border-radius: 4px; color: var(--text-dim); }
 
-.icon-btn {
-    background: none;
-    border: none;
-    color: var(--secondary-text);
+.tool-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-dim);
+    padding: 6px 12px;
+    border-radius: 6px;
     cursor: pointer;
-    padding: 8px;
-    border-radius: 50%;
-    transition: all 0.2s;
-}
-
-.icon-btn:hover {
-    background: #334155;
-    color: white;
-}
-
-.container {
-    width: 95%;
-    max-width: 1400px;
-    margin: 20px auto;
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-    flex: 1;
-}
-
-/* 面板通用样式 */
-.control-panel, .result-panel {
-    background: var(--panel-bg);
-    padding: 25px;
-    border-radius: 16px;
-    border: 1px solid #334155;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.control-panel { flex: 1; min-width: 320px; }
-.result-panel { flex: 2; min-width: 400px; display: flex; flex-direction: column; align-items: center; }
-
-h2 {
-    color: var(--accent-color);
-    font-size: 0.9rem;
-    letter-spacing: 2px;
-    margin-top: 0;
-    margin-bottom: 20px;
-    font-weight: 800;
-}
-
-.form-group { margin-bottom: 20px; }
-
-label {
-    display: block;
-    margin-bottom: 8px;
-    color: var(--secondary-text);
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-input[type="text"], input[type="password"], select, input[type="file"] {
-    width: 100%;
-    padding: 12px;
-    background: #0f172a;
-    border: 1px solid #334155;
-    color: white;
-    border-radius: 8px;
-    box-sizing: border-box;
-    font-size: 0.95rem;
-}
-
-input:focus, select:focus {
-    outline: none;
-    border-color: var(--accent-color);
-}
-
-.info-box {
-    background: rgba(139, 92, 246, 0.1);
-    border: 1px solid rgba(139, 92, 246, 0.2);
-    color: var(--accent-color);
-    padding: 10px;
-    border-radius: 8px;
-    font-size: 0.9rem;
     display: flex;
     align-items: center;
     gap: 8px;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+.tool-btn:hover { background: var(--border-color); color: white; }
+
+/* 主工作区布局 */
+.main-workspace {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 320px 1fr; /* 左侧固定，右侧自适应 */
+    height: calc(100vh - 56px);
 }
 
-/* 摇杆样式 */
-.joystick-container {
-    background: #0f172a;
-    border-radius: 12px;
+/* 左侧检查器面板 */
+.inspector-panel {
+    background: var(--panel-bg);
+    border-right: 1px solid var(--border-color);
     padding: 20px;
-    text-align: center;
-    border: 1px solid #334155;
-}
-
-.joystick-pad {
-    width: 200px;
-    height: 200px;
-    background: radial-gradient(circle, #1e293b 0%, #0f172a 70%);
-    border: 2px solid var(--accent-color);
-    border-radius: 50%;
-    margin: 0 auto;
-    position: relative;
-    cursor: crosshair;
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
-}
-
-.joystick-handle {
-    width: 24px;
-    height: 24px;
-    background-color: #fbbf24; /* Amber */
-    border-radius: 50%;
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    box-shadow: 0 0 10px #fbbf24;
-}
-
-.crosshair-h, .crosshair-v {
-    position: absolute;
-    background-color: rgba(255, 255, 255, 0.1);
-    pointer-events: none;
-}
-.crosshair-h { top: 50%; left: 0; width: 100%; height: 1px; }
-.crosshair-v { left: 50%; top: 0; height: 100%; width: 1px; }
-
-.coords-display {
+    overflow-y: auto;
     display: flex;
-    justify-content: space-between;
-    margin-top: 15px;
-    font-family: monospace;
-    font-size: 0.8rem;
+    flex-direction: column;
+    gap: 24px;
 }
-.coord-box { background: #0f172a; padding: 4px 8px; border-radius: 4px; color: var(--accent-color); border: 1px solid #334155; }
 
-.zoom-control { margin-top: 15px; }
-input[type=range] { width: 100%; accent-color: var(--accent-color); }
+.panel-section h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin: 0 0 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 1px;
+}
 
-.submit-btn {
-    width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, var(--accent-color), #6d28d9);
-    color: white;
-    border: none;
+/* 上传区 */
+.upload-zone {
+    border: 2px dashed var(--border-color);
     border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: transform 0.1s;
-}
-.submit-btn:hover { filter: brightness(1.1); }
-.submit-btn:active { transform: scale(0.98); }
-
-.preview-img, .result-img {
-    max-width: 100%;
-    max-height: 500px;
-    border-radius: 12px;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-}
-
-/* 弹窗 (Modal) 样式 */
-.modal {
-    display: none; /* 默认隐藏 */
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.7);
-    backdrop-filter: blur(5px);
+    height: 200px;
+    display: flex;
     justify-content: center;
     align-items: center;
+    cursor: pointer;
+    overflow: hidden;
+    position: relative;
+    transition: border-color 0.2s;
+}
+.upload-zone:hover { border-color: var(--accent); }
+.upload-placeholder { text-align: center; color: var(--text-dim); font-size: 13px; }
+.source-img-preview { width: 100%; height: 100%; object-fit: contain; background: #000; }
+
+/* --- 3D GIZMO (CSS Cube) --- */
+.gizmo-wrapper {
+    perspective: 800px;
+    width: 100%;
+    height: 180px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
 }
 
-.modal-content {
-    background-color: var(--panel-bg);
-    border: 1px solid #334155;
-    border-radius: 16px;
-    width: 90%;
-    max-width: 500px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-    animation: modalSlide 0.3s ease-out;
+.gizmo-scene {
+    width: 100px;
+    height: 100px;
+    transform-style: preserve-3d;
+    cursor: grab;
+}
+.gizmo-scene:active { cursor: grabbing; }
+
+.gizmo-cube {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(-15deg) rotateY(35deg); /* 初始角度 */
+    transition: transform 0.1s linear; /* 丝滑拖动 */
 }
 
-@keyframes modalSlide {
-    from { transform: translateY(-20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+.face {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 14px;
+    user-select: none;
+    backface-visibility: visible; /* 让背面可见，便于理解 */
 }
 
-.modal-header {
-    padding: 20px;
-    border-bottom: 1px solid #334155;
+/* 立方体面的位置 */
+.front  { transform: translateZ(50px); }
+.back   { transform: rotateY(180deg) translateZ(50px); }
+.right  { transform: rotateY(90deg) translateZ(50px); }
+.left   { transform: rotateY(-90deg) translateZ(50px); }
+.top    { transform: rotateX(90deg) translateZ(50px); }
+.bottom { transform: rotateX(-90deg) translateZ(50px); }
+
+.gizmo-overlay {
+    position: absolute;
+    bottom: 8px;
+    font-size: 10px;
+    color: var(--text-dim);
+    pointer-events: none;
+}
+
+.angle-readout {
     display: flex;
     justify-content: space-between;
+    margin-top: 10px;
+    background: #18181b;
+    padding: 8px;
+    border-radius: 6px;
+}
+.readout-item { display: flex; flex-direction: column; font-size: 11px; color: var(--text-dim); }
+.readout-item .value { font-size: 14px; color: var(--accent); font-family: monospace; }
+
+/* 通用控件 */
+.control-group { margin-bottom: 12px; }
+.control-group label { display: block; font-size: 12px; margin-bottom: 6px; color: var(--text-dim); }
+input[type="text"], textarea, select {
+    width: 100%;
+    background: #18181b;
+    border: 1px solid var(--border-color);
+    color: white;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+}
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+.primary-action-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
     align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    transition: filter 0.2s;
 }
-.modal-header h3 { margin: 0; color: white; display: flex; gap: 10px; align-items: center; }
-.close-modal { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
-.close-modal:hover { color: white; }
+.primary-action-btn:hover { filter: brightness(1.1); }
+.primary-action-btn:disabled { background: var(--border-color); cursor: not-allowed; }
 
-.modal-body { padding: 20px; }
-.hint-text { font-size: 0.85rem; color: #94a3b8; margin-top: 0; margin-bottom: 20px; background: #0f172a; padding: 10px; border-radius: 6px; }
+/* 右侧舞台 */
+.stage-area {
+    display: flex;
+    flex-direction: column;
+    background: #000;
+}
 
-.modal-footer { padding: 20px; border-top: 1px solid #334155; text-align: right; }
+.viewport {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
 
-.loading-spinner {
-    border: 4px solid #333;
-    border-top: 4px solid var(--accent-color);
+.viewport-header {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    background: rgba(255,255,255,0.02);
+    font-size: 12px;
+    color: var(--text-dim);
+}
+
+.canvas-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    padding: 20px;
+}
+
+.result-img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 4px;
+    box-shadow: 0 0 50px rgba(0,0,0,0.5);
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: #3f3f46;
+}
+
+.loader {
+    position: absolute;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: var(--accent);
+    font-size: 12px;
+}
+.spinner {
+    width: 24px; height: 24px;
+    border: 2px solid rgba(99, 102, 241, 0.3);
+    border-top: 2px solid var(--accent);
     border-radius: 50%;
-    width: 40px; height: 40px;
     animation: spin 1s linear infinite;
-    display: none; margin-bottom: 20px;
 }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 底部胶卷条 */
+.filmstrip-panel {
+    height: 100px;
+    background: #18181b;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+}
+.filmstrip-label { font-size: 10px; color: var(--text-dim); padding: 4px 12px; background: #09090b; }
+.filmstrip-track {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    overflow-x: auto;
+}
+.film-item {
+    height: 60px;
+    width: 60px;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    flex-shrink: 0;
+}
+.film-item:hover { border-color: var(--accent); }
+.film-item img { width: 100%; height: 100%; object-fit: cover; }
+
+.icon-only { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 4px; }
+.icon-only:hover { color: white; }
+
+/* 弹窗 */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+.modal-window {
+    background: #18181b;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    width: 400px;
+    padding: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+.modal-header { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
+.input-row { margin-bottom: 16px; }
+.save-btn { width: 100%; padding: 10px; background: white; color: black; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+.close-modal { background: none; border: none; color: white; cursor: pointer; }
