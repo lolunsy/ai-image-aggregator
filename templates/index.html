@@ -3,19 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 导演工坊 | 全自由度空间</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=6.0">
+    <title>AI 导演工坊 | 精准空间版</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=8.0">
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<!-- 阻止右键默认菜单，以便用于平移操作 -->
 <body oncontextmenu="return false;">
 
 <header class="studio-header">
     <div class="brand">
-        <div class="logo-box"><i data-lucide="move-3d"></i></div>
+        <div class="logo-box"><i data-lucide="orbit"></i></div>
         <div class="brand-text">
             <h1>AI 导演工坊</h1>
-            <span class="subtitle">全自由度空间摄影机</span>
+            <span class="subtitle">资产固定的全角度生成系统</span>
         </div>
     </div>
     <div class="header-controls">
@@ -24,122 +23,118 @@
 </header>
 
 <div class="main-layout">
-    
-    <!-- 左侧：3D 交互区 -->
     <aside class="control-panel">
-        
-        <!-- 1. 素材上传 -->
         <div class="panel-section">
-            <div class="section-header"><i data-lucide="image"></i> <span>场景核心 (Subject)</span></div>
+            <div class="section-header"><i data-lucide="anchor"></i> <span>固定资产 (Source Asset)</span></div>
             <div class="upload-widget" id="upload-zone">
                 <input type="file" id="file-input" accept="image/*" hidden>
                 <div id="upload-placeholder" class="placeholder-content">
-                    <i data-lucide="upload-cloud"></i>
-                    <p>点击上传图片</p>
+                    <i data-lucide="scan-face"></i>
+                    <p>上传角色/物体 (作为唯一基准)</p>
                 </div>
                 <img id="source-preview" class="hidden">
             </div>
+            <div class="asset-lock-hint">
+                <i data-lucide="lock"></i> <span>资产已锁定：所有生成均基于此原图</span>
+            </div>
         </div>
 
-        <!-- 2. 全自由度视口 -->
         <div class="panel-section full-height">
             <div class="section-header">
-                <div class="header-left">
-                    <i data-lucide="camera"></i> <span>空间取景器</span>
-                </div>
-                <button class="reset-btn" onclick="resetCamera()">复位镜头</button>
+                <div class="header-left"><i data-lucide="axis-3d"></i> <span>空间角度定义</span></div>
+                <button class="reset-btn" onclick="resetCamera()">归零</button>
             </div>
             
             <div class="viewport-3d" id="viewport-3d">
-                <!-- 操作指引层 -->
                 <div class="instruction-overlay">
-                    <div class="inst-item"><i data-lucide="mouse-pointer-2"></i> 左键旋转</div>
-                    <div class="inst-item"><i data-lucide="move"></i> 右键平移</div>
-                    <div class="inst-item"><i data-lucide="scroll"></i> 滚轮缩放</div>
+                    <div class="inst-item"><i data-lucide="mouse-pointer-2"></i> 左键：方位 (Azimuth)</div>
+                    <div class="inst-item"><i data-lucide="move-vertical"></i> 左键：仰俯 (Elevation)</div>
+                    <div class="inst-item"><i data-lucide="move"></i> 右键：平移构图</div>
                 </div>
 
-                <!-- 3D 场景层级：Pan -> Orbit -> Zoom -->
                 <div class="cam-pan-layer" id="cam-pan">
                     <div class="cam-orbit-layer" id="cam-orbit">
                         <div class="cam-zoom-layer" id="cam-zoom">
-                            
-                            <!-- 物理世界 -->
                             <div class="world-center">
-                                <!-- 地面网格 -->
+                                <!-- 极坐标网格 -->
                                 <div class="grid-floor">
                                     <div class="axis x-axis"></div>
                                     <div class="axis z-axis"></div>
+                                    <div class="degree-mark" style="top: 5%; left: 50%">0°</div>
+                                    <div class="degree-mark" style="top: 50%; left: 95%">90°</div>
+                                    <div class="degree-mark" style="top: 95%; left: 50%">180°</div>
+                                    <div class="degree-mark" style="top: 50%; left: 5%">270°</div>
                                     <div class="floor-label">FRONT</div>
                                 </div>
                                 
-                                <!-- 主角卡片 -->
                                 <div class="subject-card">
-                                    <img id="subject-img-3d" src="">
-                                    <div class="no-subject">?</div>
+                                    <div class="face face-front">
+                                        <img id="subject-img-3d" src="">
+                                        <div class="no-subject">?</div>
+                                    </div>
+                                    <div class="face face-back">
+                                        <div class="back-pattern">
+                                            <i data-lucide="arrow-left-right"></i>
+                                            <span>BACK ANGLE</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </div>
 
-                <!-- HUD 数据 -->
                 <div class="hud-panel">
-                    <div class="hud-row"><span>ROTATE H</span><span id="val-azi" class="accent">0°</span></div>
-                    <div class="hud-row"><span>ROTATE V</span><span id="val-ele" class="accent">0°</span></div>
-                    <div class="hud-row"><span>PAN X</span><span id="val-pan-x">0</span></div>
-                    <div class="hud-row"><span>PAN Y</span><span id="val-pan-y">0</span></div>
-                    <div class="hud-row"><span>ZOOM</span><span id="val-zoom">1.0</span></div>
+                    <div class="hud-row"><span>AZIMUTH</span><span id="val-azi" class="accent">0°</span></div>
+                    <div class="hud-row"><span>ELEVATION</span><span id="val-ele" class="accent">0°</span></div>
                 </div>
             </div>
         </div>
     </aside>
 
-    <!-- 右侧：渲染结果 -->
     <main class="result-stage">
         <div class="prompt-monitor">
-            <div class="monitor-label">SPATIAL PROMPT (空间提示词)</div>
-            <div class="monitor-screen" id="final-prompt">&lt;sks&gt; front view, eye-level shot, medium shot</div>
-            <input type="text" id="extra-prompt" class="extra-input" placeholder="在此补充风格描述 (如: cyberpunk, 8k, masterpiece)...">
+            <div class="monitor-label">PRECISION PROMPT ENGINE (精准指令)</div>
+            <div class="monitor-screen" id="final-prompt">Waiting for input...</div>
+            
+            <div class="prompt-controls">
+                <input type="text" id="extra-prompt" class="extra-input" placeholder="主体描述 (如: a cyberpunk girl, white hair)...">
+                <div class="consistency-badge">
+                    <i data-lucide="shield-check"></i> Identity Locked
+                </div>
+            </div>
         </div>
 
         <div class="canvas-wrapper">
             <div class="render-actions">
                 <select id="model-select" class="model-select-dark">
-                    <option value="preset">⚡ 预设模型 (Fal/Qwen)</option>
+                    <option value="preset">🚀 预设模型 (Fal/Qwen)</option>
                     <option value="custom">🛠 自定义 API</option>
                 </select>
                 <button id="generate-btn" class="render-btn-large">
-                    <i data-lucide="aperture"></i> 渲染视图
+                    <i data-lucide="aperture"></i> 立即渲染
                 </button>
             </div>
 
             <div class="image-container">
                 <div id="empty-state" class="empty-state">
-                    <i data-lucide="monitor-dot"></i>
-                    <p>调整左侧 3D 镜头后点击渲染</p>
+                    <i data-lucide="cube"></i><p>调整 3D 角度以生成视图</p>
                 </div>
                 <div id="loader" class="loader" style="display: none;">
-                    <div class="radar-spinner"></div>
-                    <p>正在重构三维视角...</p>
+                    <div class="radar-spinner"></div><p>正在计算空间几何...</p>
                 </div>
                 <img id="result-img" class="final-image" style="display: none;">
             </div>
         </div>
 
-        <div class="filmstrip">
-            <div class="filmstrip-track" id="filmstrip-track"></div>
-        </div>
+        <div class="filmstrip"><div class="filmstrip-track" id="filmstrip-track"></div></div>
     </main>
 </div>
 
-<!-- API 配置弹窗 -->
+<!-- API 弹窗 (保持不变) -->
 <div id="config-modal" class="modal-backdrop">
     <div class="modal-panel">
-        <div class="modal-header">
-            <h3>API 全局配置</h3>
-            <button class="close-modal"><i data-lucide="x"></i></button>
-        </div>
+        <div class="modal-header"><h3>API 配置</h3><button class="close-modal"><i data-lucide="x"></i></button></div>
         <div class="modal-body">
             <div class="input-group"><label>URL</label> <input type="text" id="cfg-url"></div>
             <div class="input-group"><label>Key</label> <input type="password" id="cfg-key"></div>
@@ -152,7 +147,6 @@
 <script>
     lucide.createIcons();
 
-    // 1. 素材上传
     const fileInput = document.getElementById('file-input');
     const sourcePreview = document.getElementById('source-preview');
     const subjectImg3D = document.getElementById('subject-img-3d');
@@ -171,198 +165,154 @@
                 subjectImg3D.src = e.target.result;
                 subjectImg3D.style.display = 'block';
                 noSubject.style.display = 'none';
+                generatePrecisionPrompt(); // 重新生成 Prompt
             }
             reader.readAsDataURL(file);
         }
     };
 
-    // --- 2. 3D 摄像机全自由度逻辑 (核心) ---
-    // 状态变量
-    const camState = {
-        azi: 0,    // 旋转 (Y轴)
-        ele: 0,    // 俯仰 (X轴)
-        panX: 0,   // 平移 X
-        panY: 0,   // 平移 Y
-        zoom: 1.0  // 缩放 Z
-    };
-
-    // DOM 元素
-    const viewport = document.getElementById('viewport-3d');
+    // --- 3D 核心交互 ---
+    const camState = { azi: 0, ele: 0, panX: 0, panY: 0, zoom: 1.0 };
     const layerPan = document.getElementById('cam-pan');
     const layerOrbit = document.getElementById('cam-orbit');
     const layerZoom = document.getElementById('cam-zoom');
     
-    // HUD
     const uiAzi = document.getElementById('val-azi');
     const uiEle = document.getElementById('val-ele');
-    const uiPanX = document.getElementById('val-pan-x');
-    const uiPanY = document.getElementById('val-pan-y');
-    const uiZoom = document.getElementById('val-zoom');
     const finalPrompt = document.getElementById('final-prompt');
+    const extraPrompt = document.getElementById('extra-prompt');
 
-    // 鼠标状态
     let isDragging = false;
-    let dragMode = null; // 'orbit' (左键) 或 'pan' (右键)
+    let dragMode = null;
     let lastX = 0, lastY = 0;
 
-    // A. 鼠标按下
+    const viewport = document.getElementById('viewport-3d');
     viewport.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        lastX = e.clientX;
-        lastY = e.clientY;
-
-        // 判断按键：0=左键, 2=右键
-        if (e.button === 0) {
-            dragMode = 'orbit';
-            viewport.style.cursor = 'grabbing';
-        } else if (e.button === 2) {
-            dragMode = 'pan';
-            viewport.style.cursor = 'move';
-        }
+        isDragging = true; lastX = e.clientX; lastY = e.clientY;
+        dragMode = (e.button === 2) ? 'pan' : 'orbit';
+        viewport.style.cursor = dragMode === 'orbit' ? 'grabbing' : 'move';
     });
 
-    // B. 鼠标移动
     window.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
-        
         const deltaX = e.clientX - lastX;
         const deltaY = e.clientY - lastY;
-        lastX = e.clientX;
-        lastY = e.clientY;
+        lastX = e.clientX; lastY = e.clientY;
 
         if (dragMode === 'orbit') {
-            // 旋转逻辑
             camState.azi += deltaX * 0.5;
-            camState.ele -= deltaY * 0.5;
-            // 限制俯仰角，避免翻转
+            // 修正：鼠标向下 -> 增加角度 -> 向后倒 -> 看到顶视图
+            camState.ele += deltaY * 0.5; 
             camState.ele = Math.max(-85, Math.min(85, camState.ele));
         } else if (dragMode === 'pan') {
-            // 平移逻辑 (反向移动场景 = 摄像机移动)
             camState.panX += deltaX;
             camState.panY += deltaY; 
         }
-
         updateCameraVisuals();
     });
 
-    // C. 鼠标松开
-    window.addEventListener('mouseup', () => {
-        isDragging = false;
-        dragMode = null;
-        viewport.style.cursor = 'grab';
-    });
-
-    // D. 滚轮缩放
+    window.addEventListener('mouseup', () => { isDragging = false; viewport.style.cursor = 'grab'; });
     viewport.addEventListener('wheel', (e) => {
         e.preventDefault();
-        // 滚轮向下(正)是缩小，向上(负)是放大
-        const zoomSpeed = 0.001 * camState.zoom; // 基于当前zoom的速率
         camState.zoom -= e.deltaY * 0.001; 
-        
-        // 限制缩放范围
         camState.zoom = Math.max(0.2, Math.min(3.0, camState.zoom));
-        
         updateCameraVisuals();
     }, { passive: false });
 
-    // 核心渲染函数：应用 CSS 变换
     function updateCameraVisuals() {
-        // 1. 平移层 (Translate X/Y)
         layerPan.style.transform = `translateX(${camState.panX}px) translateY(${camState.panY}px)`;
-        
-        // 2. 旋转层 (Rotate Y/X)
-        // 注意：rotateX 正值是让场景向后倒（我们看上面），rotateY 正值是场景顺时针（我们看左边）
         layerOrbit.style.transform = `rotateX(${camState.ele}deg) rotateY(${camState.azi}deg)`;
-        
-        // 3. 缩放层 (Scale)
         layerZoom.style.transform = `scale(${camState.zoom})`;
-
-        // 4. 更新 HUD
-        updateHUD();
-        // 5. 更新 Prompt
-        generatePrompt();
-    }
-
-    function updateHUD() {
-        // 规范化角度显示 (-180 ~ 180)
-        let dispAzi = Math.round(camState.azi % 360);
-        if (dispAzi > 180) dispAzi -= 360;
-        if (dispAzi < -180) dispAzi += 360;
-
-        uiAzi.innerText = `${dispAzi}°`;
-        uiEle.innerText = `${Math.round(camState.ele)}°`;
-        uiPanX.innerText = Math.round(camState.panX);
-        uiPanY.innerText = Math.round(camState.panY);
-        uiZoom.innerText = camState.zoom.toFixed(2) + 'x';
-    }
-
-    function generatePrompt() {
-        const azi = parseInt(uiAzi.innerText);
-        const ele = parseInt(uiEle.innerText);
-        const zoom = camState.zoom;
-
-        let parts = [];
         
-        // Azimuth Logic
-        if (azi > -20 && azi < 20) parts.push("front view");
-        else if (azi >= 20 && azi < 70) parts.push("front-left side view");
-        else if (azi >= 70 && azi < 110) parts.push("left side profile view");
-        else if (azi >= 110 && azi < 160) parts.push("back-left view");
-        else if (azi >= 160 || azi <= -160) parts.push("back view");
-        else if (azi <= -20 && azi > -70) parts.push("front-right side view");
-        else if (azi <= -70 && azi > -110) parts.push("right side profile view");
-        else if (azi <= -110 && azi > -160) parts.push("back-right view");
+        // 规范化角度 0-360
+        let displayAzi = Math.round(camState.azi % 360);
+        if (displayAzi < 0) displayAzi += 360;
+        
+        uiAzi.innerText = `${displayAzi}°`;
+        uiEle.innerText = `${Math.round(camState.ele)}°`;
 
-        // Elevation Logic
-        if (ele > 40) parts.push("top-down view");
-        else if (ele > 15) parts.push("high angle shot");
-        else if (ele < -15) parts.push("low angle shot");
-        else parts.push("eye-level shot");
-
-        // Zoom Logic
-        if (zoom > 1.8) parts.push("extreme close-up");
-        else if (zoom > 1.2) parts.push("close-up shot");
-        else if (zoom < 0.6) parts.push("wide angle full body shot");
-        else parts.push("medium shot");
-
-        finalPrompt.innerText = `<sks> ${parts.join(", ")}`;
+        generatePrecisionPrompt();
     }
+
+    // --- 4. 专业级提示词引擎 (The Logic) ---
+    // 参考 Qwen/HF 等 3D LoRA 的常用训练标签
+    function generatePrecisionPrompt() {
+        // 获取规范化数据
+        let azi = Math.round(camState.azi % 360);
+        if (azi < 0) azi += 360; // 0 ~ 359
+        
+        let ele = Math.round(camState.ele); // -85 ~ 85
+
+        // A. 方位角 (Azimuth) - 精细化分桶
+        let aziDesc = "front view";
+        
+        // 使用 8 方向罗盘 + 中间态
+        if (azi >= 337.5 || azi < 22.5) aziDesc = "front view (0°)";
+        else if (azi >= 22.5 && azi < 67.5) aziDesc = "front-right side view (45°)";
+        else if (azi >= 67.5 && azi < 112.5) aziDesc = "right profile view (90°)";
+        else if (azi >= 112.5 && azi < 157.5) aziDesc = "back-right view (135°)";
+        else if (azi >= 157.5 && azi < 202.5) aziDesc = "back view (180°)";
+        else if (azi >= 202.5 && azi < 247.5) aziDesc = "back-left view (225°)";
+        else if (azi >= 247.5 && azi < 292.5) aziDesc = "left profile view (270°)";
+        else if (azi >= 292.5 && azi < 337.5) aziDesc = "front-left side view (315°)";
+
+        // B. 仰俯角 (Elevation)
+        let eleDesc = "eye-level";
+        if (ele > 60) eleDesc = "overhead top-down view";
+        else if (ele > 30) eleDesc = "high angle view";
+        else if (ele > 10) eleDesc = "slightly from above";
+        else if (ele < -10) eleDesc = "slightly from below";
+        else if (ele < -30) eleDesc = "low angle view";
+        else if (ele < -60) eleDesc = "worm's eye view";
+
+        // C. 景别 (Distance/Zoom)
+        let zoom = camState.zoom;
+        let distDesc = "medium shot";
+        if (zoom > 1.8) distDesc = "face close-up";
+        else if (zoom > 1.2) distDesc = "close-up";
+        else if (zoom < 0.6) distDesc = "full body wide shot";
+
+        // D. 组合：[触发词] [精确角度], [自然角度], [主体], [一致性约束]
+        // 很多 LoRA 使用 "view of [class] from [angle]" 句式
+        let subject = extraPrompt.value || "the character";
+        
+        // 构造 Final Prompt
+        // 1. 触发词 (LoRA trigger)
+        // 2. 角度描述 (混合了自然语言和数值，增加命中率)
+        // 3. 资产固定咒语 (Identical, reference based)
+        let prompt = `<sks> view of ${subject}, ${aziDesc}, ${eleDesc}, ${distDesc}`;
+        prompt += `, azimuth ${azi} degrees, elevation ${ele} degrees`; // 增加数学描述，很多模型吃这一套
+        prompt += `, identical to reference, consistent identity, white background`;
+
+        finalPrompt.innerText = prompt;
+    }
+
+    extraPrompt.addEventListener('input', generatePrecisionPrompt);
 
     window.resetCamera = () => {
-        camState.azi = 0; camState.ele = 0;
-        camState.panX = 0; camState.panY = 0;
-        camState.zoom = 1.0;
+        camState.azi = 0; camState.ele = 0; camState.panX = 0; camState.panY = 0; camState.zoom = 1.0;
         updateCameraVisuals();
     };
 
-    // 初始化
-    updateCameraVisuals();
-
-    // --- 3. 提交生成 ---
+    // 提交逻辑
     const generateBtn = document.getElementById('generate-btn');
     const resultImg = document.getElementById('result-img');
     const loader = document.getElementById('loader');
     const emptyState = document.getElementById('empty-state');
 
     generateBtn.onclick = async () => {
-        if (!fileInput.files[0]) { alert('请先上传图片'); return; }
-        
-        generateBtn.disabled = true;
-        generateBtn.innerHTML = '渲染中...';
-        loader.style.display = 'flex';
-        resultImg.style.display = 'none';
-        emptyState.style.display = 'none';
+        if (!fileInput.files[0]) { alert('请先上传固定资产 (原图)'); return; }
+        generateBtn.disabled = true; generateBtn.innerHTML = 'AI 正在计算...';
+        loader.style.display = 'flex'; resultImg.style.display = 'none'; emptyState.style.display = 'none';
 
         const formData = new FormData();
         formData.append('image', fileInput.files[0]);
-        formData.append('prompt', finalPrompt.innerText + ", " + document.getElementById('extra-prompt').value);
+        // 直接使用精细计算的 Prompt
+        formData.append('prompt', finalPrompt.innerText);
         
-        // 发送所有 6DoF 参数 (供后端使用)
+        // 依然传数值给后端备案
         formData.append('azimuth', uiAzi.innerText.replace('°',''));
         formData.append('elevation', uiEle.innerText.replace('°',''));
-        formData.append('zoom', camState.zoom);
-        formData.append('pan_x', camState.panX);
-        formData.append('pan_y', camState.panY);
         
         const source = document.getElementById('model-select').value;
         formData.append('model_source', source);
@@ -380,28 +330,17 @@
                 const url = data.data.image_url || data.original_image;
                 resultImg.src = url;
                 resultImg.onload = () => { resultImg.style.display='block'; loader.style.display='none'; addToHistory(url); };
-            } else {
-                alert('Err: ' + (data.error));
-                loader.style.display = 'none';
-            }
-        } catch (e) {
-            console.error(e);
-            alert('Net Error');
-            loader.style.display = 'none';
-        } finally {
-            generateBtn.disabled = false;
-            generateBtn.innerHTML = '<i data-lucide="aperture"></i> 渲染视图';
-        }
+            } else { alert(data.error); loader.style.display = 'none'; }
+        } catch (e) { alert('Net Error'); loader.style.display = 'none'; } 
+        finally { generateBtn.disabled = false; generateBtn.innerHTML = '<i data-lucide="aperture"></i> 立即渲染'; }
     };
 
     function addToHistory(url) {
-        const d = document.createElement('div');
-        d.className = 'film-item'; d.innerHTML=`<img src="${url}">`;
-        d.onclick=()=>resultImg.src=url;
-        document.getElementById('filmstrip-track').prepend(d);
+        const d = document.createElement('div'); d.className = 'film-item'; d.innerHTML=`<img src="${url}">`;
+        d.onclick=()=>resultImg.src=url; document.getElementById('filmstrip-track').prepend(d);
     }
 
-    // Config
+    // Modal logic (Same as before)
     const modal = document.getElementById('config-modal');
     document.getElementById('config-btn').onclick = () => {
         const cfg = JSON.parse(localStorage.getItem('ai_6dof_cfg') || '{}');
@@ -419,6 +358,9 @@
         }));
         modal.style.display='none';
     }
+    
+    // 初始化一次 Prompt
+    generatePrecisionPrompt();
 </script>
 </body>
 </html>
