@@ -1,29 +1,21 @@
 import os
 import requests
 import base64
-import google.generativeai as genai
 from config import Config
 
 class AIModelService:
     def __init__(self):
-        self.google_api_key = Config.GOOGLE_API_KEY
         self.fal_key = Config.FAL_KEY
 
-    def process_image(self, image_path, prompt, azimuth, elevation, distance, model_source='preset', custom_config=None):
-        
-        # 注意：前端已经生成了核心 Prompt (如 "<sks> front view...")
-        # 后端这里只需要负责发送，或者根据具体的数值做微调
-        # 这里直接使用前端传来的 prompt，因为它已经包含了 spatial descriptions
+    def process_image(self, image_path, prompt, model_source='preset', custom_config=None):
         
         full_prompt = f"{prompt}, high quality, detailed"
-        print(f"Generating with 3D params: Azi={azimuth}, Ele={elevation}, Dist={distance}")
-        print(f"Final Prompt: {full_prompt}")
+        print(f"Executing: {full_prompt}")
 
         if model_source == 'custom':
-            if not custom_config: return {"error": "缺少自定义 API 配置"}
+            if not custom_config: return {"error": "Missing Custom API Config"}
             return self._call_custom_api(image_path, full_prompt, custom_config)
 
-        # 默认 Fal
         return self._call_fal_ai_qwen(image_path, full_prompt)
 
     def _call_custom_api(self, image_path, full_prompt, config):
@@ -42,7 +34,6 @@ class AIModelService:
             }
             
             payload = { "model": model, "prompt": full_prompt, "image": image_data, "n": 1, "size": "1024x1024" }
-            
             if "fal.run" in api_url:
                 headers["Authorization"] = f"Key {api_key}"
                 payload = { "image_url": image_data, "prompt": full_prompt }
