@@ -30,15 +30,17 @@ def generate():
     if file.filename == '':
         return jsonify({"success": False, "error": "未选择文件"})
 
-    # 1. 基础 Prompt
+    # 1. 核心 Prompt
     prompt = request.form.get('prompt', '')
 
-    # 2. 3D 摄像机参数
-    azimuth = request.form.get('azimuth', 0)    # 0-360
-    elevation = request.form.get('elevation', 0) # -10 - 90
-    distance = request.form.get('distance', 2.5) # 1.0 - 10.0
+    # 2. 6DoF 参数
+    azimuth = request.form.get('azimuth', 0)
+    elevation = request.form.get('elevation', 0)
+    zoom = request.form.get('zoom', 1.0)
+    pan_x = request.form.get('pan_x', 0)
+    pan_y = request.form.get('pan_y', 0)
     
-    # 3. 模型配置
+    # 3. 配置
     model_source = request.form.get('model_source', 'preset')
     custom_config = {}
     if model_source == 'custom':
@@ -57,9 +59,6 @@ def generate():
             result = ai_service.process_image(
                 image_path=filepath,
                 prompt=prompt,
-                azimuth=azimuth,
-                elevation=elevation,
-                distance=distance,
                 model_source=model_source,
                 custom_config=custom_config
             )
@@ -76,7 +75,7 @@ def generate():
         except Exception as e:
             return jsonify({"success": False, "error": str(e)})
 
-    return jsonify({"success": False, "error": "文件类型不支持"})
+    return jsonify({"success": False, "error": "文件类型错误"})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
