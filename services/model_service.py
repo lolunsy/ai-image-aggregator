@@ -9,55 +9,21 @@ class AIModelService:
         self.google_api_key = Config.GOOGLE_API_KEY
         self.fal_key = Config.FAL_KEY
 
-    def _params_to_prompt(self, rotate, pan_y, zoom):
-        """
-        将可视化控制杆的数值转换为 AI 提示词
-        Rotate: -180 ~ 180 (水平角度)
-        Pan_Y: -50 ~ 50 (垂直角度)
-        Zoom: 0 ~ 100 (景别)
-        """
-        parts = []
-
-        # 1. 水平视角 (Rotate)
-        r = float(rotate)
-        if -15 <= r <= 15: parts.append("front view")
-        elif 15 < r <= 75: parts.append("front-right side view")
-        elif 75 < r <= 105: parts.append("right side profile view")
-        elif 105 < r <= 165: parts.append("back-right view")
-        elif r > 165 or r < -165: parts.append("back view")
-        elif -75 <= r < -15: parts.append("front-left side view")
-        elif -105 <= r < -75: parts.append("left side profile view")
-        elif -165 <= r < -105: parts.append("back-left view")
-
-        # 2. 垂直视角 (Pan Y)
-        # 向上拖动 Pan Y 是正数，视觉上图片上移，意味着我们在看它的下面（仰视）？
-        # 或者 模拟云台：向上推是让相机向上看（仰视）
-        y = float(pan_y)
-        if y > 15: parts.append("low angle view looking up")
-        elif y < -15: parts.append("high angle view looking down")
-        else: parts.append("eye-level shot")
-
-        # 3. 缩放 (Zoom)
-        z = float(zoom)
-        if z > 70: parts.append("close-up shot")
-        elif z < 30: parts.append("wide angle full body shot")
-        else: parts.append("medium shot")
-
-        return ", ".join(parts)
-
-    def process_image(self, image_path, prompt, rotate, pan_y, zoom, model_source='preset', custom_config=None):
+    def process_image(self, image_path, prompt, azimuth, elevation, distance, model_source='preset', custom_config=None):
         
-        # 生成提示词
-        angle_prompt = self._params_to_prompt(rotate, pan_y, zoom)
-        full_prompt = f"{prompt}, {angle_prompt}, consistent character, high quality"
+        # 注意：前端已经生成了核心 Prompt (如 "<sks> front view...")
+        # 后端这里只需要负责发送，或者根据具体的数值做微调
+        # 这里直接使用前端传来的 prompt，因为它已经包含了 spatial descriptions
         
-        print(f"Generating with: {full_prompt}")
+        full_prompt = f"{prompt}, high quality, detailed"
+        print(f"Generating with 3D params: Azi={azimuth}, Ele={elevation}, Dist={distance}")
+        print(f"Final Prompt: {full_prompt}")
 
         if model_source == 'custom':
-            if not custom_config: return {"error": "缺少自定义配置"}
+            if not custom_config: return {"error": "缺少自定义 API 配置"}
             return self._call_custom_api(image_path, full_prompt, custom_config)
 
-        # 默认使用 Fal/Qwen
+        # 默认 Fal
         return self._call_fal_ai_qwen(image_path, full_prompt)
 
     def _call_custom_api(self, image_path, full_prompt, config):
@@ -75,8 +41,8 @@ class AIModelService:
                 "Content-Type": "application/json"
             }
             
-            # 兼容 OpenAI 和 Fal 格式
             payload = { "model": model, "prompt": full_prompt, "image": image_data, "n": 1, "size": "1024x1024" }
+            
             if "fal.run" in api_url:
                 headers["Authorization"] = f"Key {api_key}"
                 payload = { "image_url": image_data, "prompt": full_prompt }
@@ -87,7 +53,7 @@ class AIModelService:
                 result = response.json()
                 if 'data' in result: return {"status": "success", "image_url": result['data'][0]['url']}
                 elif 'images' in result: return {"status": "success", "image_url": result['images'][0]['url']}
-                else: return {"status": "success", "message": "API success but format unknown", "raw": result}
+                else: return {"status": "success", "message": "Success", "raw": result}
             else:
                 return {"error": f"API Error: {response.text}"}
 
@@ -96,7 +62,7 @@ class AIModelService:
 
     def _call_fal_ai_qwen(self, image_path, prompt):
         try:
-            if not self.fal_key: return {"error": "Server FAL_KEY missing"}
+            if not self.fal_key: return {"error": "FAL_KEY missing"}
             with open(image_path, "rb") as image_file:
                 encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
                 image_data_uri = f"data:image/jpeg;base64,{encoded_string}"
