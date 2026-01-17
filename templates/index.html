@@ -3,10 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 视角控制器</title>
+    <title>AI 导演工坊 - 全局配置版</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- 引入 Lucide 图标库 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
+
+<!-- 顶部导航栏 -->
+<div class="navbar">
+    <div class="brand">
+        <i data-lucide="wand-2"></i>
+        <span>AI 导演工坊</span>
+    </div>
+    <div class="tools">
+        <button id="settings-btn" class="icon-btn">
+            <i data-lucide="settings"></i>
+        </button>
+    </div>
+</div>
 
 <div class="container">
     <!-- 左侧控制面板 -->
@@ -15,12 +30,29 @@
         
         <form id="generate-form">
             <div class="form-group">
-                <label>MODEL / 模型</label>
+                <label>MODEL SOURCE / 模型源</label>
+                <select name="model_source" id="model_source">
+                    <option value="preset">使用预设模型 (Fal/Gemini)</option>
+                    <option value="custom">使用自定义 API (第三方)</option>
+                </select>
+            </div>
+
+            <!-- 预设模型选择 -->
+            <div class="form-group" id="preset-group">
+                <label>PRESET MODEL / 选择模型</label>
                 <select name="model_name">
                     {% for name, id in models.items() %}
                     <option value="{{ name }}">{{ name }}</option>
                     {% endfor %}
                 </select>
+            </div>
+
+            <!-- 自定义配置提示 -->
+            <div class="form-group" id="custom-group" style="display: none;">
+                <div class="info-box">
+                    <i data-lucide="info" size="14"></i>
+                    <span>将使用右上角设置中的 API 配置</span>
+                </div>
             </div>
 
             <div class="form-group">
@@ -49,7 +81,7 @@
                         <input type="range" id="zoom-slider" min="0" max="100" value="50">
                     </div>
 
-                    <!-- 隐藏的 Input，用于提交给后端 -->
+                    <!-- 隐藏参数 -->
                     <input type="hidden" name="h_angle" id="input-h" value="0">
                     <input type="hidden" name="v_angle" id="input-v" value="0">
                     <input type="hidden" name="zoom" id="input-z" value="50">
@@ -86,105 +118,152 @@
     </div>
 </div>
 
+<!-- 全局配置弹窗 (Config Modal) -->
+<div id="config-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i data-lucide="server"></i> 第三方 API 配置</h3>
+            <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p class="hint-text">在此填写的配置将保存在本地浏览器中，后端不会永久存储。</p>
+            
+            <div class="form-group">
+                <label>API Base URL (接口地址)</label>
+                <input type="text" id="cfg-api-url" placeholder="e.g. https://api.openai.com/v1" value="https://api.openai.com/v1">
+            </div>
+
+            <div class="form-group">
+                <label>API Key (密钥)</label>
+                <input type="password" id="cfg-api-key" placeholder="sk-...">
+            </div>
+
+            <div class="form-group">
+                <label>Custom Model Name (自定义模型名)</label>
+                <input type="text" id="cfg-model-name" placeholder="e.g. gpt-4-vision-preview">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="save-config-btn" class="submit-btn">保存配置</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    // --- 摇杆交互逻辑 ---
+    // 初始化图标
+    lucide.createIcons();
+
+    // --- 1. 配置弹窗逻辑 ---
+    const modal = document.getElementById('config-modal');
+    const settingsBtn = document.getElementById('settings-btn');
+    const closeSpan = document.getElementsByClassName('close-modal')[0];
+    const saveConfigBtn = document.getElementById('save-config-btn');
+
+    // 输入框元素
+    const cfgUrl = document.getElementById('cfg-api-url');
+    const cfgKey = document.getElementById('cfg-api-key');
+    const cfgModel = document.getElementById('cfg-model-name');
+
+    // 打开弹窗
+    settingsBtn.onclick = function() {
+        // 从 localStorage 加载配置
+        const config = JSON.parse(localStorage.getItem('ai_custom_config') || '{}');
+        if(config.url) cfgUrl.value = config.url;
+        if(config.key) cfgKey.value = config.key;
+        if(config.model) cfgModel.value = config.model;
+        
+        modal.style.display = "flex";
+    }
+
+    // 关闭弹窗
+    closeSpan.onclick = function() { modal.style.display = "none"; }
+    window.onclick = function(event) {
+        if (event.target == modal) modal.style.display = "none";
+    }
+
+    // 保存配置
+    saveConfigBtn.onclick = function() {
+        const config = {
+            url: cfgUrl.value,
+            key: cfgKey.value,
+            model: cfgModel.value
+        };
+        localStorage.setItem('ai_custom_config', JSON.stringify(config));
+        modal.style.display = "none";
+        alert('配置已保存到本地！');
+    }
+
+    // --- 2. 模型源切换逻辑 ---
+    const modelSource = document.getElementById('model_source');
+    const presetGroup = document.getElementById('preset-group');
+    const customGroup = document.getElementById('custom-group');
+
+    modelSource.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            presetGroup.style.display = 'none';
+            customGroup.style.display = 'block';
+        } else {
+            presetGroup.style.display = 'block';
+            customGroup.style.display = 'none';
+        }
+    });
+
+    // --- 3. 摇杆交互逻辑 (保持不变) ---
     const pad = document.getElementById('joystick-pad');
     const handle = document.getElementById('joystick-handle');
     const valH = document.getElementById('val-h');
     const valV = document.getElementById('val-v');
     const inputH = document.getElementById('input-h');
     const inputV = document.getElementById('input-v');
-    
     let isDragging = false;
-    const radius = 100; // pad width / 2
+    const radius = 100;
 
-    // 更新位置和数值函数
     function updateJoystick(x, y) {
-        // 限制在圆形范围内
         const distance = Math.sqrt(x*x + y*y);
-        const maxDist = radius - 10; // 减去 handle 半径
-        
+        const maxDist = radius - 10;
         if (distance > maxDist) {
             const angle = Math.atan2(y, x);
             x = Math.cos(angle) * maxDist;
             y = Math.sin(angle) * maxDist;
         }
-
-        // 移动 Handle (CSS transform)
-        // 注意：x, y 是相对于中心的坐标
         handle.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
-
-        // 计算角度数值 (-180 到 180)
-        // 映射：X轴 (-radius ~ +radius) -> (-180 ~ 180)
-        // 映射：Y轴 (-radius ~ +radius) -> (90 ~ -90) 注意Y轴向上是正还是负
-        
         const hAngle = Math.round((x / maxDist) * 180);
-        const vAngle = Math.round((y / maxDist) * -90); // 向上拖动Y为负，但通常我们认为那是正仰角，所以取反
-
-        // 更新显示和 Input
-        valH.innerText = hAngle;
-        valV.innerText = vAngle;
-        inputH.value = hAngle;
-        inputV.value = vAngle;
+        const vAngle = Math.round((y / maxDist) * -90);
+        valH.innerText = hAngle; valV.innerText = vAngle;
+        inputH.value = hAngle; inputV.value = vAngle;
     }
 
-    // 鼠标事件监听
-    pad.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        handleMouseMove(e);
-    });
-
-    document.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        handleMouseMove(e);
-    });
-
-    document.addEventListener('mouseup', () => {
-        isDragging = false;
-        // 可选：松开后是否回弹？截图中的功能通常不回弹，保持设定
-    });
+    pad.addEventListener('mousedown', (e) => { isDragging = true; handleMouseMove(e); });
+    document.addEventListener('mousemove', (e) => { if (isDragging) handleMouseMove(e); });
+    document.addEventListener('mouseup', () => { isDragging = false; });
 
     function handleMouseMove(e) {
         const rect = pad.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        
-        const x = e.clientX - centerX;
-        const y = e.clientY - centerY;
-        
+        const x = e.clientX - (rect.left + rect.width / 2);
+        const y = e.clientY - (rect.top + rect.height / 2);
         updateJoystick(x, y);
     }
 
-    // --- 缩放滑块逻辑 ---
     const zoomSlider = document.getElementById('zoom-slider');
     const valZ = document.getElementById('val-z');
     const inputZ = document.getElementById('input-z');
-
     zoomSlider.addEventListener('input', (e) => {
-        const val = e.target.value;
-        // 简单的映射 0-100 到 1.0 - 10.0 的视觉数值
-        const visualZoom = (val / 10).toFixed(1);
-        valZ.innerText = visualZoom;
-        inputZ.value = val;
+        valZ.innerText = (e.target.value / 10).toFixed(1);
+        inputZ.value = e.target.value;
     });
 
-    // --- 图片上传预览 ---
+    // --- 4. 表单提交逻辑 (核心修改) ---
     const fileInput = document.getElementById('file-input');
     const originalPreview = document.getElementById('original-preview');
-
     fileInput.addEventListener('change', function() {
         const file = this.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = function(e) {
-                originalPreview.src = e.target.result;
-                originalPreview.style.display = 'block';
-            }
+            reader.onload = (e) => { originalPreview.src = e.target.result; originalPreview.style.display = 'block'; }
             reader.readAsDataURL(file);
         }
     });
 
-    // --- 表单提交逻辑 (AJAX) ---
     document.getElementById('generate-form').addEventListener('submit', async function(e) {
         e.preventDefault();
         
@@ -193,18 +272,33 @@
         const statusText = document.getElementById('status-text');
         const resultImg = document.getElementById('result-img');
 
+        // 验证自定义配置
+        const source = modelSource.value;
+        const config = JSON.parse(localStorage.getItem('ai_custom_config') || '{}');
+        
+        if (source === 'custom') {
+            if (!config.url || !config.key) {
+                alert('请先点击右上角设置图标，填写 API URL 和 Key！');
+                return;
+            }
+        }
+
         submitBtn.disabled = true;
         loading.style.display = 'block';
-        statusText.innerText = "Processing on server...";
+        statusText.innerText = "Processing...";
         resultImg.style.display = 'none';
 
         const formData = new FormData(this);
+        
+        // 如果是自定义模式，把 LocalStorage 里的配置附加上去
+        if (source === 'custom') {
+            formData.append('custom_api_url', config.url);
+            formData.append('custom_api_key', config.key);
+            formData.append('custom_model_name', config.model);
+        }
 
         try {
-            const response = await fetch('/generate', {
-                method: 'POST',
-                body: formData
-            });
+            const response = await fetch('/generate', { method: 'POST', body: formData });
             const data = await response.json();
 
             if (data.success) {
@@ -213,7 +307,7 @@
                     resultImg.src = data.data.image_url;
                     resultImg.style.display = 'block';
                 } else {
-                    statusText.innerText = data.data.message || "Done (No image returned)";
+                    statusText.innerText = data.data.message;
                 }
             } else {
                 statusText.innerText = "Error: " + data.error;
