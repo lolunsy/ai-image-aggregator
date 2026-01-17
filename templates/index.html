@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 导演工坊 | 智能运镜系统</title>
-    <!-- 强制更新 CSS 版本防止缓存 -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.0">
+    <title>AI 导演工坊 | 三维空间运镜系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4.0">
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
@@ -13,297 +12,313 @@
 <!-- 顶部导航 -->
 <header class="studio-header">
     <div class="brand">
-        <div class="logo-box">
-            <i data-lucide="clapperboard"></i>
-        </div>
+        <div class="logo-box"><i data-lucide="clapperboard"></i></div>
         <div class="brand-text">
             <h1>AI 导演工坊</h1>
-            <span class="subtitle">智能视觉控制台</span>
+            <span class="subtitle">三维空间摄影机调度系统</span>
         </div>
     </div>
     <div class="header-controls">
         <button id="config-btn" class="tool-btn">
-            <i data-lucide="settings"></i> <span>全局设置</span>
+            <i data-lucide="settings"></i> <span>API 全局配置</span>
         </button>
     </div>
 </header>
 
 <div class="main-layout">
     
-    <!-- 左侧：控制台 -->
+    <!-- 左侧：3D 运镜控制台 -->
     <aside class="control-panel">
         
-        <!-- 1. 素材上传区 -->
+        <!-- 1. 核心素材 -->
         <div class="panel-section">
-            <div class="section-header">
-                <i data-lucide="image"></i> <span>核心素材</span>
-            </div>
+            <div class="section-header"><i data-lucide="box"></i> <span>场景主角 (Subject)</span></div>
             <div class="upload-widget" id="upload-zone">
                 <input type="file" id="file-input" accept="image/*" hidden>
                 <div id="upload-placeholder" class="placeholder-content">
                     <i data-lucide="upload-cloud"></i>
-                    <p>点击上传角色原图</p>
+                    <p>点击上传角色/物体图片</p>
                 </div>
                 <img id="source-preview" class="hidden">
             </div>
         </div>
 
-        <!-- 2. 可视化运镜控制 (核心功能) -->
-        <div class="panel-section">
+        <!-- 2. 三维可视化运镜 (核心功能) -->
+        <div class="panel-section full-height">
             <div class="section-header">
-                <i data-lucide="camera"></i> <span>运镜控制台</span>
+                <i data-lucide="axis-3d"></i> <span>空间摄像机轨道</span>
+                <span class="tech-tag">3D VIEW</span>
             </div>
             
-            <!-- 模拟取景器 -->
-            <div class="camera-viewport">
-                <div class="viewport-overlay">
-                    <span class="guide-line h-line"></span>
-                    <span class="guide-line v-line"></span>
+            <!-- 3D 舞台 -->
+            <div class="scene-container">
+                <div class="scene-stage" id="scene-stage">
+                    <!-- 地面网格 -->
+                    <div class="grid-floor"></div>
+                    
+                    <!-- 中心主角 (Billboard) -->
+                    <div class="subject-wrapper">
+                        <div class="subject-plane">
+                            <img id="subject-img-3d" src="" alt="Subject">
+                            <div class="subject-placeholder">?</div>
+                        </div>
+                    </div>
+
+                    <!-- 摄像机轨道系统 -->
+                    <div class="camera-orbit-system" id="orbit-system">
+                        <!-- 摄像机连线 -->
+                        <div class="camera-line"></div>
+                        <!-- 摄像机本体 -->
+                        <div class="camera-gizmo">
+                            <div class="cam-body"></div>
+                            <div class="cam-lens"></div>
+                        </div>
+                    </div>
                 </div>
-                <!-- 这张图会随着控制杆变化 -->
-                <img id="manipulate-img" src="" alt="请先上传图片">
-                <div class="no-image-hint">无信号</div>
+                
+                <!-- 视角方位指示器 (HUD) -->
+                <div class="hud-overlay">
+                    <div class="hud-item top-left">
+                        <span class="hud-label">Azimuth (方位角)</span>
+                        <span class="hud-val" id="disp-azimuth">0°</span>
+                    </div>
+                    <div class="hud-item top-right">
+                        <span class="hud-label">Elevation (仰角)</span>
+                        <span class="hud-val" id="disp-elevation">0°</span>
+                    </div>
+                    <div class="hud-item bottom-left">
+                        <span class="hud-label">Distance (距离)</span>
+                        <span class="hud-val" id="disp-distance">2.0m</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- 控制杆区域 -->
+            <!-- 控制滑杆 -->
             <div class="controls-grid">
-                <!-- 旋转 -->
+                <!-- 方位角 -->
                 <div class="control-item">
                     <div class="control-label">
-                        <span><i data-lucide="rotate-cw"></i> 环绕旋转</span>
-                        <span id="val-rotate" class="val-tag">0°</span>
+                        <span><i data-lucide="refresh-cw"></i> Azimuth (环绕)</span>
                     </div>
-                    <input type="range" id="rotate-slider" min="-180" max="180" value="0">
+                    <input type="range" id="azimuth-slider" min="0" max="360" value="0">
+                    <div class="tick-marks">
+                        <span>Front</span><span>Right</span><span>Back</span><span>Left</span><span>Front</span>
+                    </div>
                 </div>
 
-                <!-- 垂直平移 (模拟俯仰) -->
+                <!-- 仰角 -->
                 <div class="control-item">
                     <div class="control-label">
-                        <span><i data-lucide="move-vertical"></i> 俯仰角度</span>
-                        <span id="val-pan-y" class="val-tag">0%</span>
+                        <span><i data-lucide="move-vertical"></i> Elevation (高低)</span>
                     </div>
-                    <input type="range" id="pan-y-slider" min="-50" max="50" value="0">
+                    <input type="range" id="elevation-slider" min="-10" max="90" value="0">
+                    <div class="tick-marks">
+                        <span>Low</span><span>Eye</span><span>High</span><span>Top</span>
+                    </div>
                 </div>
 
-                <!-- 缩放 -->
+                <!-- 距离 -->
                 <div class="control-item">
                     <div class="control-label">
-                        <span><i data-lucide="zoom-in"></i> 镜头推拉</span>
-                        <span id="val-zoom" class="val-tag">1.0x</span>
+                        <span><i data-lucide="maximize"></i> Distance (景别)</span>
                     </div>
-                    <input type="range" id="zoom-slider" min="0" max="100" value="50">
+                    <input type="range" id="distance-slider" min="1" max="10" step="0.1" value="2.5">
+                    <div class="tick-marks">
+                        <span>Close</span><span>Medium</span><span>Wide</span>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <!-- 3. 智能提示词回显 -->
-        <div class="panel-section">
-            <div class="section-header">
-                <i data-lucide="sparkles"></i> <span>生成视角落点 (自动计算)</span>
-            </div>
-            <div class="prompt-box">
-                <textarea id="auto-prompt" readonly placeholder="调整上方运镜杆，此处将自动生成空间提示词..."></textarea>
-            </div>
-            
-            <div class="control-item" style="margin-top:10px;">
-                <label style="font-size:12px; color:#666;">额外风格描述 (可选)</label>
-                <input type="text" id="user-prompt" placeholder="例如：赛博朋克，雨夜，霓虹灯...">
-            </div>
-        </div>
-
-        <!-- 4. 渲染按钮 -->
-        <div class="action-area">
-            <select id="model-select" class="model-dropdown">
-                <option value="preset">⚡ 使用预设模型 (Fal/Qwen)</option>
-                <option value="custom">🛠 使用自定义 API (设置中配置)</option>
-            </select>
-            <button id="generate-btn" class="render-btn">
-                <i data-lucide="play"></i> 开始渲染
-            </button>
         </div>
     </aside>
 
-    <!-- 右侧：结果展示区 -->
+    <!-- 右侧：渲染结果 -->
     <main class="result-stage">
-        <div class="stage-toolbar">
-            <span class="stage-title">渲染监视器</span>
-            <div class="stage-actions">
-                <button onclick="clearStage()" title="清空"><i data-lucide="trash-2"></i></button>
-                <button onclick="downloadCurrent()" title="下载"><i data-lucide="download"></i></button>
-            </div>
+        <!-- 自动生成的 Prompt 显示区 -->
+        <div class="prompt-monitor">
+            <div class="monitor-label">GENERATED PROMPT / 空间提示词</div>
+            <div class="monitor-screen" id="final-prompt">&lt;sks&gt; front view, eye-level shot, medium shot</div>
+            <input type="text" id="extra-prompt" class="extra-input" placeholder="在此补充风格描述 (如: cyberpunk, 8k, masterpiece)...">
         </div>
 
         <div class="canvas-wrapper">
-            <!-- 空状态 -->
-            <div id="empty-state" class="empty-state">
-                <div class="empty-icon"><i data-lucide="monitor-off"></i></div>
-                <p>等待渲染信号输入...</p>
-            </div>
-            
-            <!-- 加载动画 -->
-            <div id="loader" class="loader" style="display: none;">
-                <div class="spinner"></div>
-                <p>AI 正在计算光影与空间关系...</p>
+            <div class="render-actions">
+                <select id="model-select" class="model-select-dark">
+                    <option value="preset">🚀 预设模型 (Fal/Qwen)</option>
+                    <option value="custom">🛠 自定义 API (OpenAI/Google)</option>
+                </select>
+                <button id="generate-btn" class="render-btn-large">
+                    <i data-lucide="aperture"></i> 渲染视图
+                </button>
             </div>
 
-            <!-- 结果图 -->
-            <img id="result-img" class="final-image" style="display: none;">
+            <div class="image-container">
+                <div id="empty-state" class="empty-state">
+                    <i data-lucide="monitor-play"></i>
+                    <p>准备就绪，等待渲染指令</p>
+                </div>
+                <div id="loader" class="loader" style="display: none;">
+                    <div class="radar-spinner"></div>
+                    <p>正在计算空间光影...</p>
+                </div>
+                <img id="result-img" class="final-image" style="display: none;">
+                
+                <div class="viewport-tools">
+                    <button onclick="downloadCurrent()"><i data-lucide="download"></i></button>
+                    <button onclick="clearStage()"><i data-lucide="x-circle"></i></button>
+                </div>
+            </div>
         </div>
 
-        <!-- 底部胶卷 -->
+        <!-- 底部历史记录 -->
         <div class="filmstrip">
-            <div class="filmstrip-header">历史胶卷</div>
             <div class="filmstrip-track" id="filmstrip-track"></div>
         </div>
     </main>
 </div>
 
-<!-- API 设置弹窗 (复刻参考风格) -->
+<!-- API 配置弹窗 -->
 <div id="config-modal" class="modal-backdrop">
     <div class="modal-panel">
         <div class="modal-header">
-            <div class="modal-title">
-                <i data-lucide="server"></i>
-                <span>服务与模型配置</span>
-            </div>
+            <div class="modal-title"><i data-lucide="server"></i> <span>API 全局配置</span></div>
             <button class="close-modal"><i data-lucide="x"></i></button>
         </div>
-        
         <div class="modal-body">
-            <div class="config-section">
-                <h3>自定义 API 连接</h3>
-                <p class="config-desc">配置兼容 OpenAI 格式的第三方接口，或直接填入 Fal.ai/Google 密钥。</p>
-                
-                <div class="input-group">
-                    <label>接口地址 (Base URL)</label>
-                    <div class="input-wrapper">
-                        <i data-lucide="globe"></i>
-                        <input type="text" id="cfg-url" placeholder="例如: https://api.openai.com/v1">
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label>访问密钥 (API Key)</label>
-                    <div class="input-wrapper">
-                        <i data-lucide="key"></i>
-                        <input type="password" id="cfg-key" placeholder="sk-...">
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label>目标模型 (Model ID)</label>
-                    <div class="input-wrapper">
-                        <i data-lucide="box"></i>
-                        <input type="text" id="cfg-model" placeholder="例如: gpt-4-vision-preview">
-                    </div>
-                </div>
+            <div class="config-desc">配置第三方模型接口 (兼容 OpenAI 格式或 Fal.ai)</div>
+            <div class="input-group">
+                <label>API Base URL</label>
+                <input type="text" id="cfg-url" placeholder="https://api.openai.com/v1">
+            </div>
+            <div class="input-group">
+                <label>API Key</label>
+                <input type="password" id="cfg-key" placeholder="sk-...">
+            </div>
+            <div class="input-group">
+                <label>Model Name</label>
+                <input type="text" id="cfg-model" placeholder="gpt-4-vision-preview">
             </div>
         </div>
-
         <div class="modal-footer">
-            <button id="save-cfg-btn" class="save-btn">
-                <i data-lucide="save"></i> 保存并应用配置
-            </button>
+            <button id="save-cfg-btn" class="save-btn">保存配置</button>
         </div>
     </div>
 </div>
 
 <script>
-    // 初始化图标
     lucide.createIcons();
 
-    // --- 1. 素材上传与预览逻辑 ---
-    const uploadZone = document.getElementById('upload-zone');
+    // --- 1. 图片处理 ---
     const fileInput = document.getElementById('file-input');
     const sourcePreview = document.getElementById('source-preview');
-    const manipulateImg = document.getElementById('manipulate-img');
+    const subjectImg3D = document.getElementById('subject-img-3d');
     const placeholder = document.getElementById('upload-placeholder');
-    const noImageHint = document.querySelector('.no-image-hint');
+    const subjectPlaceholder = document.querySelector('.subject-placeholder');
 
-    uploadZone.onclick = () => fileInput.click();
+    document.getElementById('upload-zone').onclick = () => fileInput.click();
 
     fileInput.onchange = (e) => {
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = (e) => {
-                // 左上角预览
                 sourcePreview.src = e.target.result;
                 sourcePreview.classList.remove('hidden');
                 placeholder.style.display = 'none';
                 
-                // 运镜台预览
-                manipulateImg.src = e.target.result;
-                manipulateImg.style.display = 'block';
-                noImageHint.style.display = 'none';
+                // 3D 场景中的主角
+                subjectImg3D.src = e.target.result;
+                subjectImg3D.style.display = 'block';
+                subjectPlaceholder.style.display = 'none';
             }
             reader.readAsDataURL(file);
         }
     };
 
-    // --- 2. 运镜控制与实时交互 ---
-    const rotateSlider = document.getElementById('rotate-slider');
-    const panYSlider = document.getElementById('pan-y-slider');
-    const zoomSlider = document.getElementById('zoom-slider');
+    // --- 2. 3D 摄像机轨道逻辑 (核心) ---
+    const aziSlider = document.getElementById('azimuth-slider');
+    const eleSlider = document.getElementById('elevation-slider');
+    const distSlider = document.getElementById('distance-slider');
     
-    const valRotate = document.getElementById('val-rotate');
-    const valPanY = document.getElementById('val-pan-y');
-    const valZoom = document.getElementById('val-zoom');
-    
-    const autoPromptBox = document.getElementById('auto-prompt');
+    const sceneStage = document.getElementById('scene-stage');
+    const orbitSystem = document.getElementById('orbit-system');
+    const cameraGizmo = document.querySelector('.camera-gizmo');
+    const cameraLine = document.querySelector('.camera-line');
 
-    function updateCamera() {
-        const r = parseInt(rotateSlider.value);
-        const y = parseInt(panYSlider.value);
-        const z = parseInt(zoomSlider.value);
+    const dispAzi = document.getElementById('disp-azimuth');
+    const dispEle = document.getElementById('disp-elevation');
+    const dispDist = document.getElementById('disp-distance');
+    const finalPrompt = document.getElementById('final-prompt');
 
-        // 1. 更新数值显示
-        valRotate.innerText = `${r}°`;
-        valPanY.innerText = `${y}%`;
-        valZoom.innerText = `${(0.5 + z/100).toFixed(1)}x`;
+    function update3DScene() {
+        const azi = parseInt(aziSlider.value); // 0 - 360
+        const ele = parseInt(eleSlider.value); // -10 - 90
+        const dist = parseFloat(distSlider.value); // 1.0 - 10.0
 
-        // 2. CSS 变换 (Visual Feedback)
-        // 旋转：rotateY 实现 3D 旋转感
-        // 俯仰：translateY 模拟上下移动
-        // 缩放：scale
-        const visualScale = 0.5 + (z / 100); 
-        manipulateImg.style.transform = `scale(${visualScale}) rotate(${r}deg) translateY(${y}px)`;
+        // 更新 HUD 数值
+        dispAzi.innerText = `${azi}°`;
+        dispEle.innerText = `${ele}°`;
+        dispDist.innerText = `${dist.toFixed(1)}m`;
 
-        // 3. 自动生成提示词 (Prompt Logic)
-        generatePromptText(r, y, z);
+        // 1. 旋转整个舞台来模拟摄像机环绕 (更直观，主角不动，摄像机动)
+        // 实际上在 CSS 3D 中，旋转父容器 orbitSystem 最容易实现
+        // Azimuth (Y轴旋转), Elevation (Z轴/X轴旋转，取决于坐标系)
+        
+        // 我们让轨道系统旋转
+        // transform: rotateY(azi) rotateX(-ele)
+        // 注意：CSS 的旋转方向可能需要微调以匹配直觉
+        orbitSystem.style.transform = `rotateY(${azi}deg) rotateX(${-ele}deg)`;
+
+        // 2. 距离控制 (Camera Translation)
+        // 摄像机在 Z 轴上移动 (远离中心)
+        // 基础距离 100px + dist * 30px
+        const zDistance = 60 + (dist * 25);
+        cameraGizmo.style.transform = `translateZ(${zDistance}px) rotateX(90deg)`; 
+        // rotateX(90deg) 是为了让锥体指向中心
+        
+        // 更新连线长度
+        cameraLine.style.width = `${zDistance}px`;
+        cameraLine.style.transform = `rotateY(90deg) translateX(${zDistance/2}px)`; // 稍微复杂一点的定位
+
+        // 3. 更新提示词
+        updatePromptText(azi, ele, dist);
     }
 
-    function generatePromptText(r, y, z) {
-        let parts = [];
+    function updatePromptText(azi, ele, dist) {
+        let p_azi = "front view";
+        let p_ele = "eye-level shot";
+        let p_dist = "medium shot";
 
-        // 水平视角逻辑
-        if (r > 15 && r <= 75) parts.push("Front-Right Side View (右前侧视)");
-        else if (r > 75 && r <= 105) parts.push("Right Profile View (右侧正视)");
-        else if (r > 105) parts.push("Back View (后背视)");
-        else if (r < -15 && r >= -75) parts.push("Front-Left Side View (左前侧视)");
-        else if (r < -75 && r >= -105) parts.push("Left Profile View (左侧正视)");
-        else if (r < -105) parts.push("Back View (后背视)");
-        else parts.push("Front View (正视)");
+        // Azimuth Logic (Based on 0 = Front)
+        if (azi > 315 || azi <= 45) p_azi = "front view";
+        else if (azi > 45 && azi <= 135) p_azi = "right side view";
+        else if (azi > 135 && azi <= 225) p_azi = "back view";
+        else if (azi > 225 && azi <= 315) p_azi = "left side view";
 
-        // 垂直视角逻辑 (Pan Y)
-        if (y > 15) parts.push("Low Angle (低机位仰视)");
-        else if (y < -15) parts.push("High Angle (高机位俯视)");
-        else parts.push("Eye-level Shot (平视)");
+        // Elevation Logic
+        if (ele > 60) p_ele = "top-down view (overhead)";
+        else if (ele > 20) p_ele = "high angle (elevated shot)";
+        else if (ele < -5) p_ele = "low angle (worm's eye view)";
+        else p_ele = "eye-level shot";
 
-        // 缩放逻辑
-        if (z > 70) parts.push("Close-up (特写)");
-        else if (z < 30) parts.push("Wide Shot (广角)");
-        else parts.push("Medium Shot (中景)");
+        // Distance Logic
+        if (dist < 2.5) p_dist = "close-up shot";
+        else if (dist > 6.0) p_dist = "wide angle full body shot";
+        else p_dist = "medium shot";
 
-        autoPromptBox.value = parts.join(", ");
+        // 组合 Prompt (参考你的截图格式)
+        finalPrompt.innerText = `<sks> ${p_azi}, ${p_ele}, ${p_dist}`;
     }
 
-    // 绑定事件
-    rotateSlider.addEventListener('input', updateCamera);
-    panYSlider.addEventListener('input', updateCamera);
-    zoomSlider.addEventListener('input', updateCamera);
+    // 事件监听
+    aziSlider.addEventListener('input', update3DScene);
+    eleSlider.addEventListener('input', update3DScene);
+    distSlider.addEventListener('input', update3DScene);
+    
+    // 初始化
+    update3DScene();
 
-    // --- 3. 提交生成 ---
+
+    // --- 3. 生成逻辑 ---
     const generateBtn = document.getElementById('generate-btn');
     const resultImg = document.getElementById('result-img');
     const loader = document.getElementById('loader');
@@ -312,34 +327,36 @@
 
     generateBtn.onclick = async () => {
         if (!fileInput.files[0]) {
-            alert('❌ 请先在“核心素材”区域上传图片');
+            alert('请先上传场景主角图片');
             return;
         }
 
-        // UI 状态
         generateBtn.disabled = true;
-        generateBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> 渲染中...';
+        generateBtn.innerHTML = '<i data-lucide="loader" class="spin"></i> 计算中...';
         loader.style.display = 'flex';
         resultImg.style.display = 'none';
         emptyState.style.display = 'none';
 
         const formData = new FormData();
         formData.append('image', fileInput.files[0]);
-        formData.append('prompt', document.getElementById('user-prompt').value);
         
-        // 传递运镜参数
-        formData.append('rotate', rotateSlider.value);
-        formData.append('pan_y', panYSlider.value);
-        formData.append('zoom', zoomSlider.value);
+        // 组合完整的 Prompt
+        const basePrompt = finalPrompt.innerText;
+        const userExtra = document.getElementById('extra-prompt').value;
+        formData.append('prompt', `${basePrompt}, ${userExtra}`);
         
-        // 模型配置
+        // 传递数值参数 (供后端记录或微调)
+        formData.append('azimuth', aziSlider.value);
+        formData.append('elevation', eleSlider.value);
+        formData.append('distance', distSlider.value);
+        
+        // API 配置
         const source = document.getElementById('model-select').value;
         formData.append('model_source', source);
-        
         if (source === 'custom') {
-            const cfg = JSON.parse(localStorage.getItem('ai_director_cfg') || '{}');
+            const cfg = JSON.parse(localStorage.getItem('ai_director_cfg_v2') || '{}');
             if(!cfg.url || !cfg.key) {
-                alert('请点击右上角“全局设置”配置 API');
+                alert('请在右上角配置 API');
                 resetBtn();
                 return;
             }
@@ -353,7 +370,7 @@
             const data = await res.json();
 
             if (data.success) {
-                const url = data.data.image_url || data.original_image; // Fallback
+                const url = data.data.image_url || data.original_image;
                 resultImg.src = url;
                 resultImg.onload = () => {
                     resultImg.style.display = 'block';
@@ -376,7 +393,7 @@
 
     function resetBtn() {
         generateBtn.disabled = false;
-        generateBtn.innerHTML = '<i data-lucide="play"></i> 开始渲染';
+        generateBtn.innerHTML = '<i data-lucide="aperture"></i> 渲染视图';
     }
 
     function addToHistory(url) {
@@ -384,44 +401,32 @@
         div.className = 'film-item';
         div.innerHTML = `<img src="${url}">`;
         div.onclick = () => resultImg.src = url;
-        filmstrip.prepend(div);
+        document.getElementById('filmstrip-track').prepend(div);
     }
 
-    // --- 4. 配置弹窗逻辑 ---
+    // --- 4. 配置弹窗 ---
     const modal = document.getElementById('config-modal');
     document.getElementById('config-btn').onclick = () => {
-        const cfg = JSON.parse(localStorage.getItem('ai_director_cfg') || '{}');
+        const cfg = JSON.parse(localStorage.getItem('ai_director_cfg_v2') || '{}');
         document.getElementById('cfg-url').value = cfg.url || '';
         document.getElementById('cfg-key').value = cfg.key || '';
         document.getElementById('cfg-model').value = cfg.model || '';
         modal.style.display = 'flex';
     };
-    
     document.querySelector('.close-modal').onclick = () => modal.style.display = 'none';
-    
     document.getElementById('save-cfg-btn').onclick = () => {
         const cfg = {
             url: document.getElementById('cfg-url').value,
             key: document.getElementById('cfg-key').value,
             model: document.getElementById('cfg-model').value
         };
-        localStorage.setItem('ai_director_cfg', JSON.stringify(cfg));
+        localStorage.setItem('ai_director_cfg_v2', JSON.stringify(cfg));
         modal.style.display = 'none';
-        alert('✅ 配置已保存');
+        alert('配置已保存');
     };
+    window.downloadCurrent = () => { if(resultImg.src) { const a = document.createElement('a'); a.href=resultImg.src; a.download='render.png'; a.click(); }};
+    window.clearStage = () => { resultImg.style.display='none'; emptyState.style.display='flex'; };
 
-    window.downloadCurrent = () => {
-        if(resultImg.src) {
-            const a = document.createElement('a');
-            a.href = resultImg.src;
-            a.download = `AI_Director_${Date.now()}.png`;
-            a.click();
-        }
-    };
-    window.clearStage = () => {
-        resultImg.style.display = 'none';
-        emptyState.style.display = 'flex';
-    }
 </script>
 </body>
 </html>
