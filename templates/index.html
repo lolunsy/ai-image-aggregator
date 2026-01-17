@@ -3,324 +3,381 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 导演工坊 - 全局配置版</title>
+    <title>AI Director Studio | 视觉控制台</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <!-- 引入 Lucide 图标库 -->
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
-<!-- 顶部导航栏 -->
-<div class="navbar">
+<!-- 全局背景光效 -->
+<div class="ambient-glow"></div>
+
+<!-- 顶部工具栏 -->
+<header class="studio-header">
     <div class="brand">
-        <i data-lucide="wand-2"></i>
-        <span>AI 导演工坊</span>
+        <i data-lucide="clapperboard"></i>
+        <span>AI DIRECTOR STUDIO</span>
+        <span class="version">v2.0 Beta</span>
     </div>
-    <div class="tools">
-        <button id="settings-btn" class="icon-btn">
-            <i data-lucide="settings"></i>
+    <div class="header-controls">
+        <button id="config-btn" class="tool-btn" title="API 设置">
+            <i data-lucide="settings"></i> <span>API 配置</span>
         </button>
     </div>
-</div>
+</header>
 
-<div class="container">
-    <!-- 左侧控制面板 -->
-    <div class="control-panel">
-        <h2>PARAMETERS</h2>
-        
-        <form id="generate-form">
-            <div class="form-group">
-                <label>MODEL SOURCE / 模型源</label>
-                <select name="model_source" id="model_source">
-                    <option value="preset">使用预设模型 (Fal/Gemini)</option>
-                    <option value="custom">使用自定义 API (第三方)</option>
-                </select>
-            </div>
-
-            <!-- 预设模型选择 -->
-            <div class="form-group" id="preset-group">
-                <label>PRESET MODEL / 选择模型</label>
-                <select name="model_name">
-                    {% for name, id in models.items() %}
-                    <option value="{{ name }}">{{ name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <!-- 自定义配置提示 -->
-            <div class="form-group" id="custom-group" style="display: none;">
-                <div class="info-box">
-                    <i data-lucide="info" size="14"></i>
-                    <span>将使用右上角设置中的 API 配置</span>
+<div class="main-workspace">
+    
+    <!-- 左侧：参数控制区 (Inspector) -->
+    <aside class="inspector-panel">
+        <div class="panel-section">
+            <h3><i data-lucide="image"></i> 源素材</h3>
+            <div class="upload-zone" id="upload-zone">
+                <input type="file" id="file-input" accept="image/*" hidden>
+                <div class="upload-placeholder" id="upload-placeholder">
+                    <i data-lucide="upload-cloud"></i>
+                    <p>点击上传角色图</p>
                 </div>
+                <img id="source-preview" class="source-img-preview" style="display: none;">
             </div>
-
-            <div class="form-group">
-                <label>SOURCE IMAGE / 源图片</label>
-                <input type="file" name="image" id="file-input" accept="image/*" required>
-            </div>
-
-            <!-- 摇杆交互区 -->
-            <div class="form-group">
-                <label>CAMERA ANGLE / 视角控制</label>
-                <div class="joystick-container">
-                    <div class="joystick-pad" id="joystick-pad">
-                        <div class="crosshair-h"></div>
-                        <div class="crosshair-v"></div>
-                        <div class="joystick-handle" id="joystick-handle"></div>
-                    </div>
-                    
-                    <div class="coords-display">
-                        <div class="coord-box">HOR: <span id="val-h">0</span>°</div>
-                        <div class="coord-box">VER: <span id="val-v">0</span>°</div>
-                        <div class="coord-box">ZOOM: <span id="val-z">5.0</span></div>
-                    </div>
-
-                    <div class="zoom-control">
-                        <label style="font-size: 0.8rem;">ZOOM LEVEL</label>
-                        <input type="range" id="zoom-slider" min="0" max="100" value="50">
-                    </div>
-
-                    <!-- 隐藏参数 -->
-                    <input type="hidden" name="h_angle" id="input-h" value="0">
-                    <input type="hidden" name="v_angle" id="input-v" value="0">
-                    <input type="hidden" name="zoom" id="input-z" value="50">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>PROMPT / 提示词</label>
-                <input type="text" name="prompt" placeholder="Describe the subject...">
-            </div>
-
-            <button type="submit" class="submit-btn" id="submit-btn">GENERATE</button>
-        </form>
-    </div>
-
-    <!-- 右侧结果面板 -->
-    <div class="result-panel">
-        <h2>PREVIEW</h2>
-        <div id="loading" class="loading-spinner"></div>
-        
-        <div id="content-area" style="text-align: center; width: 100%;">
-            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                <div>
-                    <p style="color:#666">Original</p>
-                    <img id="original-preview" class="preview-img" style="display: none;">
-                </div>
-                <div>
-                    <p style="color:var(--accent-color)">Result</p>
-                    <img id="result-img" class="result-img" style="display: none;">
-                </div>
-            </div>
-            <p id="status-text" style="margin-top: 20px; color: #888;">Ready to generate.</p>
         </div>
-    </div>
+
+        <div class="panel-section">
+            <h3><i data-lucide="camera"></i> 运镜控制 (Camera)</h3>
+            
+            <!-- 3D 视角控制器 -->
+            <div class="gizmo-wrapper">
+                <div class="gizmo-scene">
+                    <div class="gizmo-cube" id="gizmo-cube">
+                        <div class="face front">Front</div>
+                        <div class="face back">Back</div>
+                        <div class="face right">Right</div>
+                        <div class="face left">Left</div>
+                        <div class="face top">Top</div>
+                        <div class="face bottom">Btm</div>
+                    </div>
+                </div>
+                <div class="gizmo-overlay">
+                    <p>拖动立方体旋转视角</p>
+                </div>
+            </div>
+
+            <!-- 角度数值显示 -->
+            <div class="angle-readout">
+                <div class="readout-item">
+                    <span class="label">H (水平)</span>
+                    <span class="value" id="val-h">0°</span>
+                </div>
+                <div class="readout-item">
+                    <span class="label">V (垂直)</span>
+                    <span class="value" id="val-v">0°</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>镜头距离 (Zoom)</label>
+                <input type="range" id="zoom-slider" min="0" max="100" value="50">
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <h3><i data-lucide="wand-2"></i> 渲染设置</h3>
+            
+            <div class="control-group">
+                <label>模型选择</label>
+                <select id="model-select">
+                    <option value="preset">预设 (Flux/Qwen)</option>
+                    <option value="custom">自定义 API</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>补充提示词 (Prompt)</label>
+                <textarea id="prompt-input" rows="3" placeholder="例如：赛博朋克风格，加上霓虹灯光..."></textarea>
+            </div>
+
+            <button id="generate-btn" class="primary-action-btn">
+                <i data-lucide="play"></i> 开始渲染
+            </button>
+        </div>
+    </aside>
+
+    <!-- 右侧：舞台区 (Stage) -->
+    <main class="stage-area">
+        <!-- 结果展示 -->
+        <div class="viewport" id="viewport">
+            <div class="viewport-header">
+                <span id="result-status">Ready</span>
+                <div class="viewport-tools">
+                    <button class="icon-only" onclick="clearStage()"><i data-lucide="trash-2"></i></button>
+                    <button class="icon-only" onclick="downloadCurrent()"><i data-lucide="download"></i></button>
+                </div>
+            </div>
+            
+            <div class="canvas-container">
+                <div id="empty-state" class="empty-state">
+                    <i data-lucide="monitor"></i>
+                    <p>等待渲染结果...</p>
+                </div>
+                <img id="main-result-img" class="result-img" style="display: none;">
+                <div id="loader" class="loader">
+                    <div class="spinner"></div>
+                    <p>AI 正在计算光影...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部：胶卷栏 (Filmstrip) -->
+        <div class="filmstrip-panel">
+            <div class="filmstrip-label">HISTORY</div>
+            <div class="filmstrip-track" id="filmstrip-track">
+                <!-- 历史生成的图片会插在这里 -->
+            </div>
+        </div>
+    </main>
+
 </div>
 
-<!-- 全局配置弹窗 (Config Modal) -->
-<div id="config-modal" class="modal">
-    <div class="modal-content">
+<!-- API 设置弹窗 -->
+<div id="settings-modal" class="modal-overlay">
+    <div class="modal-window">
         <div class="modal-header">
-            <h3><i data-lucide="server"></i> 第三方 API 配置</h3>
-            <span class="close-modal">&times;</span>
+            <h3>自定义 API 配置</h3>
+            <button class="close-modal"><i data-lucide="x"></i></button>
         </div>
         <div class="modal-body">
-            <p class="hint-text">在此填写的配置将保存在本地浏览器中，后端不会永久存储。</p>
-            
-            <div class="form-group">
-                <label>API Base URL (接口地址)</label>
-                <input type="text" id="cfg-api-url" placeholder="e.g. https://api.openai.com/v1" value="https://api.openai.com/v1">
+            <div class="input-row">
+                <label>API URL</label>
+                <input type="text" id="cfg-url" placeholder="https://api.openai.com/v1...">
             </div>
-
-            <div class="form-group">
-                <label>API Key (密钥)</label>
-                <input type="password" id="cfg-api-key" placeholder="sk-...">
+            <div class="input-row">
+                <label>API Key</label>
+                <input type="password" id="cfg-key" placeholder="sk-...">
             </div>
-
-            <div class="form-group">
-                <label>Custom Model Name (自定义模型名)</label>
-                <input type="text" id="cfg-model-name" placeholder="e.g. gpt-4-vision-preview">
+            <div class="input-row">
+                <label>Model Name</label>
+                <input type="text" id="cfg-model" placeholder="gpt-4-vision...">
             </div>
         </div>
         <div class="modal-footer">
-            <button id="save-config-btn" class="submit-btn">保存配置</button>
+            <button id="save-cfg-btn" class="save-btn">保存并应用</button>
         </div>
     </div>
 </div>
 
 <script>
-    // 初始化图标
     lucide.createIcons();
 
-    // --- 1. 配置弹窗逻辑 ---
-    const modal = document.getElementById('config-modal');
-    const settingsBtn = document.getElementById('settings-btn');
-    const closeSpan = document.getElementsByClassName('close-modal')[0];
-    const saveConfigBtn = document.getElementById('save-config-btn');
-
-    // 输入框元素
-    const cfgUrl = document.getElementById('cfg-api-url');
-    const cfgKey = document.getElementById('cfg-api-key');
-    const cfgModel = document.getElementById('cfg-model-name');
-
-    // 打开弹窗
-    settingsBtn.onclick = function() {
-        // 从 localStorage 加载配置
-        const config = JSON.parse(localStorage.getItem('ai_custom_config') || '{}');
-        if(config.url) cfgUrl.value = config.url;
-        if(config.key) cfgKey.value = config.key;
-        if(config.model) cfgModel.value = config.model;
-        
-        modal.style.display = "flex";
-    }
-
-    // 关闭弹窗
-    closeSpan.onclick = function() { modal.style.display = "none"; }
-    window.onclick = function(event) {
-        if (event.target == modal) modal.style.display = "none";
-    }
-
-    // 保存配置
-    saveConfigBtn.onclick = function() {
-        const config = {
-            url: cfgUrl.value,
-            key: cfgKey.value,
-            model: cfgModel.value
-        };
-        localStorage.setItem('ai_custom_config', JSON.stringify(config));
-        modal.style.display = "none";
-        alert('配置已保存到本地！');
-    }
-
-    // --- 2. 模型源切换逻辑 ---
-    const modelSource = document.getElementById('model_source');
-    const presetGroup = document.getElementById('preset-group');
-    const customGroup = document.getElementById('custom-group');
-
-    modelSource.addEventListener('change', function() {
-        if (this.value === 'custom') {
-            presetGroup.style.display = 'none';
-            customGroup.style.display = 'block';
-        } else {
-            presetGroup.style.display = 'block';
-            customGroup.style.display = 'none';
-        }
-    });
-
-    // --- 3. 摇杆交互逻辑 (保持不变) ---
-    const pad = document.getElementById('joystick-pad');
-    const handle = document.getElementById('joystick-handle');
-    const valH = document.getElementById('val-h');
-    const valV = document.getElementById('val-v');
-    const inputH = document.getElementById('input-h');
-    const inputV = document.getElementById('input-v');
+    // --- 3D 立方体交互逻辑 (核心改进) ---
+    const cube = document.getElementById('gizmo-cube');
+    const scene = document.querySelector('.gizmo-scene');
     let isDragging = false;
-    const radius = 100;
+    let previousMousePosition = { x: 0, y: 0 };
+    let rotation = { x: -15, y: 35 }; // 初始角度
 
-    function updateJoystick(x, y) {
-        const distance = Math.sqrt(x*x + y*y);
-        const maxDist = radius - 10;
-        if (distance > maxDist) {
-            const angle = Math.atan2(y, x);
-            x = Math.cos(angle) * maxDist;
-            y = Math.sin(angle) * maxDist;
-        }
-        handle.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
-        const hAngle = Math.round((x / maxDist) * 180);
-        const vAngle = Math.round((y / maxDist) * -90);
-        valH.innerText = hAngle; valV.innerText = vAngle;
-        inputH.value = hAngle; inputV.value = vAngle;
+    // 更新立方体姿态
+    function updateCube() {
+        // 限制垂直旋转角度，避免万向节锁或倒置
+        rotation.x = Math.max(-90, Math.min(90, rotation.x));
+        
+        cube.style.transform = `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`;
+        
+        // 更新数值显示
+        // 注意：Web 坐标系和直觉坐标系的转换
+        // Y轴旋转 = 水平视角 (H)
+        // X轴旋转 = 垂直视角 (V)
+        document.getElementById('val-h').innerText = Math.round(rotation.y % 360) + '°';
+        document.getElementById('val-v').innerText = Math.round(-rotation.x) + '°'; // 负号是为了符合直觉（上拉是仰视）
     }
 
-    pad.addEventListener('mousedown', (e) => { isDragging = true; handleMouseMove(e); });
-    document.addEventListener('mousemove', (e) => { if (isDragging) handleMouseMove(e); });
-    document.addEventListener('mouseup', () => { isDragging = false; });
-
-    function handleMouseMove(e) {
-        const rect = pad.getBoundingClientRect();
-        const x = e.clientX - (rect.left + rect.width / 2);
-        const y = e.clientY - (rect.top + rect.height / 2);
-        updateJoystick(x, y);
-    }
-
-    const zoomSlider = document.getElementById('zoom-slider');
-    const valZ = document.getElementById('val-z');
-    const inputZ = document.getElementById('input-z');
-    zoomSlider.addEventListener('input', (e) => {
-        valZ.innerText = (e.target.value / 10).toFixed(1);
-        inputZ.value = e.target.value;
+    scene.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        previousMousePosition = { x: e.clientX, y: e.clientY };
+        scene.style.cursor = 'grabbing';
     });
 
-    // --- 4. 表单提交逻辑 (核心修改) ---
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        
+        const deltaMove = {
+            x: e.clientX - previousMousePosition.x,
+            y: e.clientY - previousMousePosition.y
+        };
+
+        // 拖拽逻辑：
+        // 鼠标左右移动 -> 改变 Y 轴旋转 (Horizontal)
+        // 鼠标上下移动 -> 改变 X 轴旋转 (Vertical)
+        rotation.y += deltaMove.x * 0.5;
+        rotation.x -= deltaMove.y * 0.5;
+
+        updateCube();
+        previousMousePosition = { x: e.clientX, y: e.clientY };
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+        scene.style.cursor = 'grab';
+    });
+    
+    // 初始化一次
+    updateCube();
+
+
+    // --- 业务逻辑 ---
+
+    // 1. 上传图片预览
+    const uploadZone = document.getElementById('upload-zone');
     const fileInput = document.getElementById('file-input');
-    const originalPreview = document.getElementById('original-preview');
-    fileInput.addEventListener('change', function() {
-        const file = this.files[0];
+    const sourcePreview = document.getElementById('source-preview');
+    const placeholder = document.getElementById('upload-placeholder');
+
+    uploadZone.onclick = () => fileInput.click();
+
+    fileInput.onchange = (e) => {
+        const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = (e) => { originalPreview.src = e.target.result; originalPreview.style.display = 'block'; }
+            reader.onload = (e) => {
+                sourcePreview.src = e.target.result;
+                sourcePreview.style.display = 'block';
+                placeholder.style.display = 'none';
+            }
             reader.readAsDataURL(file);
         }
-    });
+    };
 
-    document.getElementById('generate-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const submitBtn = document.getElementById('submit-btn');
-        const loading = document.getElementById('loading');
-        const statusText = document.getElementById('status-text');
-        const resultImg = document.getElementById('result-img');
+    // 2. 生成逻辑
+    const generateBtn = document.getElementById('generate-btn');
+    const mainResultImg = document.getElementById('main-result-img');
+    const loader = document.getElementById('loader');
+    const emptyState = document.getElementById('empty-state');
+    const filmstrip = document.getElementById('filmstrip-track');
 
-        // 验证自定义配置
-        const source = modelSource.value;
-        const config = JSON.parse(localStorage.getItem('ai_custom_config') || '{}');
-        
-        if (source === 'custom') {
-            if (!config.url || !config.key) {
-                alert('请先点击右上角设置图标，填写 API URL 和 Key！');
-                return;
-            }
+    generateBtn.onclick = async () => {
+        if (!fileInput.files[0]) {
+            alert('请先上传一张图片');
+            return;
         }
 
-        submitBtn.disabled = true;
-        loading.style.display = 'block';
-        statusText.innerText = "Processing...";
-        resultImg.style.display = 'none';
+        // UI 状态切换
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> 计算中...';
+        loader.style.display = 'flex';
+        emptyState.style.display = 'none';
+        mainResultImg.style.display = 'none';
 
-        const formData = new FormData(this);
+        // 收集数据
+        const formData = new FormData();
+        formData.append('image', fileInput.files[0]);
+        formData.append('prompt', document.getElementById('prompt-input').value);
         
-        // 如果是自定义模式，把 LocalStorage 里的配置附加上去
+        // 获取角度 (取模处理，保证在 -180 ~ 180 之间，或者直接传原始值后端处理)
+        formData.append('h_angle', Math.round(rotation.y % 360));
+        formData.append('v_angle', Math.round(-rotation.x)); // X轴取反
+        formData.append('zoom', document.getElementById('zoom-slider').value);
+        
+        // 获取模型配置
+        const source = document.getElementById('model-select').value;
+        formData.append('model_source', source);
+        
         if (source === 'custom') {
-            formData.append('custom_api_url', config.url);
-            formData.append('custom_api_key', config.key);
-            formData.append('custom_model_name', config.model);
+            const cfg = JSON.parse(localStorage.getItem('ai_custom_cfg') || '{}');
+            if(!cfg.url || !cfg.key) {
+                alert('请在设置中配置 API Key');
+                resetUI();
+                return;
+            }
+            formData.append('custom_api_url', cfg.url);
+            formData.append('custom_api_key', cfg.key);
+            formData.append('custom_model_name', cfg.model);
+        } else {
+            // 这里假设是一个预设模型的名字，你可以传给后端
+            formData.append('model_name', 'qwen-image-edit-lora'); 
         }
 
         try {
-            const response = await fetch('/generate', { method: 'POST', body: formData });
-            const data = await response.json();
+            const res = await fetch('/generate', { method: 'POST', body: formData });
+            const data = await res.json();
 
-            if (data.success) {
-                statusText.innerText = "Generation Complete!";
-                if (data.data.image_url) {
-                    resultImg.src = data.data.image_url;
-                    resultImg.style.display = 'block';
-                } else {
-                    statusText.innerText = data.data.message;
-                }
+            if (data.success && data.data.image_url) {
+                const imgUrl = data.data.image_url;
+                
+                // 更新主视图
+                mainResultImg.src = imgUrl;
+                mainResultImg.onload = () => {
+                    mainResultImg.style.display = 'block';
+                    loader.style.display = 'none';
+                };
+
+                // 添加到历史记录
+                addToFilmstrip(imgUrl);
             } else {
-                statusText.innerText = "Error: " + data.error;
+                alert('生成失败: ' + (data.error || data.data.message));
+                loader.style.display = 'none';
+                emptyState.style.display = 'flex';
             }
-        } catch (err) {
-            statusText.innerText = "Network Error";
-            console.error(err);
+        } catch (e) {
+            console.error(e);
+            alert('网络错误');
+            loader.style.display = 'none';
         } finally {
-            submitBtn.disabled = false;
-            loading.style.display = 'none';
+            resetUI();
         }
-    });
-</script>
+    };
 
+    function resetUI() {
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = '<i data-lucide="play"></i> 开始渲染';
+    }
+
+    function addToFilmstrip(url) {
+        const item = document.createElement('div');
+        item.className = 'film-item';
+        item.innerHTML = `<img src="${url}">`;
+        item.onclick = () => {
+            mainResultImg.src = url; // 点击历史记录回显
+        };
+        filmstrip.prepend(item); // 最新的在最前面
+    }
+
+    // --- 设置弹窗逻辑 ---
+    const modal = document.getElementById('settings-modal');
+    document.getElementById('config-btn').onclick = () => {
+        const cfg = JSON.parse(localStorage.getItem('ai_custom_cfg') || '{}');
+        document.getElementById('cfg-url').value = cfg.url || '';
+        document.getElementById('cfg-key').value = cfg.key || '';
+        document.getElementById('cfg-model').value = cfg.model || '';
+        modal.style.display = 'flex';
+    };
+    
+    document.querySelector('.close-modal').onclick = () => modal.style.display = 'none';
+    
+    document.getElementById('save-cfg-btn').onclick = () => {
+        const cfg = {
+            url: document.getElementById('cfg-url').value,
+            key: document.getElementById('cfg-key').value,
+            model: document.getElementById('cfg-model').value
+        };
+        localStorage.setItem('ai_custom_cfg', JSON.stringify(cfg));
+        modal.style.display = 'none';
+        alert('配置已保存');
+    };
+
+    // 下载当前图片
+    window.downloadCurrent = () => {
+        if(mainResultImg.src && mainResultImg.style.display !== 'none') {
+            const a = document.createElement('a');
+            a.href = mainResultImg.src;
+            a.download = `render_${Date.now()}.png`;
+            a.click();
+        }
+    };
+
+    window.clearStage = () => {
+        mainResultImg.style.display = 'none';
+        emptyState.style.display = 'flex';
+    };
+
+</script>
 </body>
 </html>
